@@ -10,10 +10,12 @@ import "OpenZeppelin/openzeppelin-contracts@3.0.0/contracts/token/ERC20/IERC20.s
 import "OpenZeppelin/openzeppelin-contracts@3.0.0/contracts/token/ERC20/SafeERC20.sol";
 import "OpenZeppelin/openzeppelin-contracts@3.0.0/contracts/token/ERC1155.sol";
 
+import "../tokens/OVLToken.sol";
 import "../utils/SignedMath.sol";
 
 contract OVLPosition is ERC1155 {
   using SafeERC20 for IERC20;
+  using OVLToken for IERC20; // NOTE: Make sure this multiple using for IERC20 works properly
   using Address for address;
   using SafeMath for uint256;
   using SignedSafeMath for int256;
