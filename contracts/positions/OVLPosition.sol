@@ -36,6 +36,10 @@ contract OVLPosition is ERC1155 {
     return _positions[_id][_account];
   }
 
+  function _calcProfit(address _account, uint256 _id, uint256 _amount) internal view returns (int256) {
+    // TODO: ...
+  }
+
   function build(uint256 _amount, bool _long, uint256 leverage) public {
     token.safeTransferFrom(_msgSender(), address(this), _amount);
 
@@ -51,10 +55,11 @@ contract OVLPosition is ERC1155 {
   }
 
   function subFrom(uint256 _id, uint256 _amount) public {
-    int256 profit = _calcProfit(_id, _amount);
+    int256 profit = _calcProfit(_msgSender(), _id, _amount);
 
     // Burn the position tokens being unwound
-    _burn(_id, _amount);
+    // TODO: Need to zero the position in _positions as well (include that in an override of _burn function)
+    _burn(_msgSender(), _id, _amount);
 
     if profit > 0 {
       // Mint the profit to this address first
