@@ -9,7 +9,7 @@ library SignedMath {
   using SignedSafeMath as int256;
 
   function abs(int256 a) internal pure returns (int256) {
-    return a >= 0 ? a : a.mult(-1.0);
+    return a >= 0 ? a : a.mult(-1);
   }
 
 }
