@@ -2,9 +2,11 @@
 
 pragma solidity ^0.6.0;
 
-contract OVLChainlinkFeed {
+import "../../interfaces/overlay/IOVLFeed.sol";
 
-  function getLatestPrice() public view returns (uint256) {
+contract OVLChainlinkFeed is IOVLFeed {
+
+  function getLatestPrice() public virtual override returns (uint256) {
 
   }
 

@@ -2,14 +2,14 @@
 
 pragma solidity ^0.6.0;
 
-import "OpenZeppelin/openzeppelin-contracts@3.0.0/contracts/math/SignedSafeMath.sol";
+import "@openzeppelinV3/contracts/math/SignedSafeMath.sol";
 
 library SignedMath {
 
-  using SignedSafeMath as int256;
+  using SignedSafeMath for int256;
 
   function abs(int256 a) internal pure returns (int256) {
-    return a >= 0 ? a : a.mult(-1);
+    return a >= 0 ? a : a.mul(-1);
   }
 
 }
