@@ -2,7 +2,7 @@
 
 ### OVL Token (ERC20)
 
-1. Allows holders to participate in trading: long/short data streams on new tokens
+1. Allows holders to participate in long/short trading of data streams
 2. Gives holders governance stake in proposed data feeds and tuning of their risk parameters
 3. Gives holders governance control over treasury: revenue from fees assessed on each trade.
 
