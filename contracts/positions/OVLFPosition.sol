@@ -31,7 +31,7 @@ contract OVLFPosition is ERC1155 {
     bool long
     uint256 leverage
     uint256 liquidationPrice
-    uint256 avgPrice
+    uint256 price
   }
 
   mapping (uint256 => mapping(address => FPosition)) private _positions;
@@ -53,17 +53,10 @@ contract OVLFPosition is ERC1155 {
     _mint(_msgSender(), id, _amount, data);
   }
 
-  function addTo(uint256 _id, uint256 _amount) public {
+  // uwind() unlocks _amount of position
+  function unwind(uint256 _id, uint256 _amount) public {
     uint256 price = _getPriceFromFeed(); // TODO: Verify this is safe given calling external contract view method in effects
-    _updatePosition(_msgSender(), _id, _amount, price, true);
-
-    // Mints more of the position NFT
-    _mint(_msgSender(), _id, _amount, data);
-  }
-
-  function subFrom(uint256 _id, uint256 _amount) public {
-    uint256 price = _getPriceFromFeed(); // TODO: Verify this is safe given calling external contract view method in effects
-    int256 profit =_updatePosition(_msgSender(), _id, _amount, price, false);
+    int256 profit =_updatePositionOnUnwind(_msgSender(), _id, _amount, price);
 
     // Burn the position tokens being unwound
     _burn(_msgSender(), _id, _amount);
@@ -91,10 +84,10 @@ contract OVLFPosition is ERC1155 {
     }
   }
 
-  // uwind() unlocks entire position
-  function unwind(uint256 _id) public {
+  // uwindAll() unlocks entire position
+  function unwindAll(uint256 _id) public {
     uint256 amount = balanceOf(_msgSender(), _id);
-    subFrom(_id, amount);
+    unwind(_id, amount);
   }
 
   function _getPriceFromFeed() internal returns (uint256) {
@@ -123,24 +116,23 @@ contract OVLFPosition is ERC1155 {
 
   }
 
-  function _updatePosition(address _account, uint256 _id, uint256 _amount, uint256 _price, bool _addTo) internal returns (int256) {
+  function _updatePositionOnUnwind(address _account, uint256 _id, uint256 _amount, uint256 _price) internal returns (int256) {
     Position memory pos = positionOf(_account, _id);
+    uint256 profit = _calcProfit(pos, _amount, _price);
 
-    if (_addTo) {
-      // TODO: recalculate liquidationPrice, avgPrice
-      pos.avgPrice = pos.avgPrice.mult(pos.balance).
-
-      pos.balance.add(_amount);
-    } else {
-      // TODO: recalculate liquidationPrice, avgPrice
-
-      pos.balance.sub(_amount);
-    }
+    // TODO: recalculate liquidationPrice
+    pos.balance.sub(_amount);
 
     _positions[_id][_account] = pos;
+
+    return profit;
   }
 
-  function _calcProfit(address _account, uint256 _id, uint256 _amount, uint256 _price) internal view returns (int256) {
+  function _calcProfit(Position memory position, uint256 _amount, uint256 _price) internal view returns (int256) {
+
+  }
+
+  function _calcPercPnL(Position memory position, uint256 _price) internal view returns (int256) {
 
   }
 }
