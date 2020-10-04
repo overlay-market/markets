@@ -2,7 +2,7 @@
 
 ### OVL Token (ERC20)
 
-1. Allows holders to participate in trading: long/short perpetuals on new tokens
+1. Allows holders to participate in trading: long/short data streams on new tokens
 2. Gives holders governance stake in proposed data feeds and tuning of their risk parameters
 3. Gives holders governance control over treasury: revenue from fees assessed on each trade.
 
@@ -12,6 +12,7 @@ Three phases for initial token distribution (~ 10% to alpha testers, ~ 90% to yi
 3. Beta yield farming of more $OVL with seeded Uniswap $OVL/$ETH LP tokens
 
 ### Roadmap
+
 1. Long/Short w corresponding tokens on launch (ETH x DeFi token pools & feeds)
 2. Uniswap and Chainlink oracles for base pair feeds
 3. Gas ⛽️ oracle (front-run resistant) w feed (Chainlink)
@@ -100,6 +101,7 @@ interface OVLPosition {
 
 
 #### Questions
+
 1. How to deploy new OVLPosition => OVLFeed combos? ... Look to yearn controller/deployer
 
 2. How to implement governance for deployment?
