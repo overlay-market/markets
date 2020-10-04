@@ -26,7 +26,7 @@ Three phases for initial token distribution (~ 10% to alpha testers, ~ 90% to yi
 
 ### Revenue Model
 
-Fees (in $OVL): Base 0.15% per trade, adjustable by governance on feed-by-feed basis
+Fees (in $OVL): 0.15% per trade, adjustable by governance on feed-by-feed basis
 
 - 50% is burned
 - 50% is sold for ETH via Uniswap through treasury
@@ -65,7 +65,7 @@ Eventually lend out the locked OVL from positions for capital efficiency and add
 // Base ERC20 OVL token
 interface OVLToken {
 
-  function mint(address _to, uint256 _amount) public;
+  function mint(uint256 _amount) public;
 
   function burn(uint256 _amount) public;
 
