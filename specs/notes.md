@@ -11,31 +11,13 @@ Three phases for initial token distribution (~ 10% to alpha testers, ~ 90% to yi
 2. Beta yield farming of $OVL with other Uniswap token pools: $SNXETH, $AAVEETH, $WBTCETH, etc.
 3. Beta yield farming of more $OVL with seeded Uniswap $OVL/$ETH LP tokens
 
-### Roadmap
+### OVL Position (ERC1155)
 
-1. Long/Short w corresponding tokens on launch (ETH x DeFi token pools & feeds)
-2. Uniswap and Chainlink oracles for base pair feeds
-3. Gas ⛽️ oracle (front-run resistant) w feed (Chainlink)
-4. Leverage
-5. More feeds
-6. New stablecoin based off composition of derivs
-7. Lending of Locked OVL positions (likely through Aave)
-8. Expiries?
+- NFT representing a trader's position,  received upon locking up OVL in a trade on a data stream
 
-**(1, 2, 3) are good proof of concept (POC) for the hack. Include 4, maybe.**
+- Unique identifiers are attrs of the position: Lock price, data feed name, long/short side, leverage
 
-### Revenue Model
-
-Fees (in $OVL): 0.15% per trade, adjustable by governance on feed-by-feed basis
-
-- 50% is burned
-- 50% is sold for ETH via Uniswap through treasury
-
-To incentivize OVLETH liquidity providers and governance contributors for eternity, take the 50% of the ETH to treasury and divide evenly between
-- 50% (25% of total fees) to OVLETH LPs staking
-- 50% (25% of total fees) to governance $OVL stakers that vote
-
-Eventually lend out the locked OVL from positions for capital efficiency and additional revenue.
+- Tradeable/transferrable on secondary markets given ERC1155 standard
 
 ### Hackathon (v0)
 
@@ -81,7 +63,7 @@ interface OVLPosition {
        uint256 balance
        uint256 leverage
        uint256 liquidationPrice
-       uint256 avgPrice
+       uint256 price
     }
 
    mapping (uint256 => mapping(address => Position)) private _positions;
@@ -111,3 +93,29 @@ interface OVLPosition {
 5. How to make oracle feed interface so general that can accommodate Uniswap and Chainlink
 
 6. Sell in fixed time increments to save on gas (pool gas fees until make trade)? Or every time user exits position, hit Uniswap and charge user (likely costly and slow)?
+
+### Revenue Model
+
+Fees (in $OVL): 0.15% per trade, adjustable by governance on feed-by-feed basis
+
+- 50% is burned
+- 50% is sold for ETH via Uniswap through treasury
+
+To incentivize OVLETH liquidity providers and governance contributors for eternity, take the 50% of the ETH to treasury and divide evenly between
+- 50% (25% of total fees) to OVLETH LPs staking
+- 50% (25% of total fees) to governance $OVL stakers that vote
+
+Eventually lend out the locked OVL from positions for capital efficiency and additional revenue.
+
+### Roadmap
+
+1. Long/Short w corresponding tokens on launch (ETH x DeFi token pools & feeds)
+2. Uniswap and Chainlink oracles for base pair feeds
+3. Gas ⛽️ oracle (front-run resistant) w feed (Chainlink)
+4. Leverage
+5. More feeds
+6. New stablecoin based off composition of derivs
+7. Lending of Locked OVL positions (likely through Aave)
+8. Expiries?
+
+**(1, 2, 3) are good proof of concept (POC) for the hack. Include 4, maybe.**

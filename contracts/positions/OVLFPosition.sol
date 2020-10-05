@@ -57,14 +57,20 @@ contract OVLFPosition is ERC1155, IOVLPosition {
     uint256 price = _getPriceFromFeed(); // TODO: Verify this is safe given calling external contract view method in effects
     uint256 id = _createPosition(_amount, _long, _leverage, price);
 
+    // TODO: Add in trade fees!
+
     // Q: What should data param be for _mint?
     _mint(_msgSender(), id, _amount, abi.encodePacked(uint8(0x0)));
   }
+
+  // TODO: add buildAll() here and in IOVLPosition.sol
 
   // uwind() unlocks _amount of position
   function unwind(uint256 _id, uint256 _amount) public virtual override {
     uint256 price = _getPriceFromFeed(); // TODO: Verify this is safe given calling external contract view method in effects
     int256 profit =_updatePositionOnUnwind(_msgSender(), _id, _amount, price);
+
+    // TODO: Add in trade fees!
 
     // Burn the position tokens being unwound
     _burn(_msgSender(), _id, _amount);
