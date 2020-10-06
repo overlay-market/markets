@@ -59,8 +59,7 @@ contract OVLFPosition is ERC1155, IOVLPosition {
     _amount = _amount.sub(tradeFee);
 
     // Create the position NFT
-    uint256 price = _getPriceFromFeed(); // TODO: Verify this is safe given calling external contract view method in effects
-    uint256 id = _createPosition(_amount, _long, _leverage, price);
+    uint256 id = _createPosition(_amount, _long, _leverage);
     _mint(_msgSender(), id, _amount, abi.encodePacked(uint8(0x0)));
     _transferFeesToTreasury(tradeFee);
   }
@@ -72,9 +71,8 @@ contract OVLFPosition is ERC1155, IOVLPosition {
 
   // uwind() unlocks _amount in OVL from position
   function unwind(uint256 _id, uint256 _amount) public virtual override {
-    uint256 price = _getPriceFromFeed(); // TODO: Verify this is safe given calling external contract view method in effects
-    int256 profit =_updatePositionOnUnwind(_msgSender(), _id, _amount, price);
     _burn(_msgSender(), _id, _amount);
+    int256 profit =_updatePositionOnUnwind(_msgSender(), _id, _amount);
 
     if (profit > 0) {
       uint256 mintAmount = uint256(SignedMath.abs(profit));
@@ -116,7 +114,8 @@ contract OVLFPosition is ERC1155, IOVLPosition {
     token.safeTransfer(treasury, fees);
   }
 
-  function _createPosition(uint256 _amount, bool _long, uint256 _leverage, uint256 _price) private returns (uint256) {
+  function _createPosition(uint256 _amount, bool _long, uint256 _leverage) private returns (uint256) {
+    uint256 price = _getPriceFromFeed();
     uint256 id = uint256(keccak256(abi.encodePacked(_long, _leverage, _price))); // TODO: Check this is safe
     uint256 liquidationPrice = _calcLiquidationPrice(_amount, _long, _leverage, _price);
     _positions[id][_msgSender()] = FPosition(
@@ -133,8 +132,9 @@ contract OVLFPosition is ERC1155, IOVLPosition {
     return _amount.mul(_leverage).mul(tradeFeePerc).div(100); // TODO: make sure this is right here
   }
 
-  function _updatePositionOnUnwind(address _account, uint256 _id, uint256 _amount, uint256 _price) private returns (int256) {
+  function _updatePositionOnUnwind(address _account, uint256 _id, uint256 _amount) private returns (int256) {
     FPosition memory pos = _positionOf(_account, _id);
+    uint256 price = _getPriceFromFeed();
     int256 profit = _calcProfit(pos, _amount, _price);
 
     // TODO: recalculate liquidationPrice
