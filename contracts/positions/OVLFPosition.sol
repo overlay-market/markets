@@ -109,7 +109,7 @@ contract OVLFPosition is ERC1155, IOVLPosition {
   }
 
   function _transferFeesToTreasury(uint256 fees) private {
-    uint256 burnAmount = fees.mult(feeBurnPerc).div(100);
+    uint256 burnAmount = fees.mul(feeBurnPerc).div(100);
     token.burn(burnAmount);
 
     fees.sub(burnAmount);
@@ -130,7 +130,7 @@ contract OVLFPosition is ERC1155, IOVLPosition {
   }
 
   function _calcTradeFee(uint256 _amount, uint256 _leverage) internal view returns (uint256) {
-    return _amount.mult(_leverage).mult(tradeFeePerc).div(100); // TODO: make sure this is right here
+    return _amount.mul(_leverage).mul(tradeFeePerc).div(100); // TODO: make sure this is right here
   }
 
   function _updatePositionOnUnwind(address _account, uint256 _id, uint256 _amount, uint256 _price) private returns (int256) {
