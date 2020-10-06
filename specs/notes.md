@@ -47,9 +47,9 @@ Three phases for initial token distribution (~ 10% to alpha testers, ~ 90% to yi
 // Base ERC20 OVL token
 interface OVLToken {
 
-  function mint(uint256 _amount) public;
+  function mint(uint256 _amount) external;
 
-  function burn(uint256 _amount) public;
+  function burn(uint256 _amount) external;
 
 }
 
@@ -59,40 +59,23 @@ interface OVLPosition {
     IERC20 public token;
 
     struct Position {
-       bool long
-       uint256 balance
-       uint256 leverage
-       uint256 liquidationPrice
-       uint256 price
+       bool long;
+       uint256 balance;
+       uint256 leverage;
+       uint256 liquidationPrice;
+       uint256 lockPrice;
     }
 
-   mapping (uint256 => mapping(address => Position)) private _positions;
+   function build(uint256 _amount, bool _long, uint256 leverage) external;
 
-   function build(uint256 _amount, bool _long, uint256 leverage) public;
+   function unwind(uint256 _id, uint256 _amount) external;
 
-   function unwind(uint256 _id, uint256 _amount) public;
-
-   function unwindAll(uint256 _id) public;
+   function unwindAll(uint256 _id) external;
 
 }
 ```
 
 - Slightly diff architecture than firebase functions here in sense that once enter a position, get an NFT. Can’t unwind into completely opposite direction (i.e. switch from long to short requires locking in a new separate position)
-
-
-#### Questions
-
-1. How to deploy new OVLPosition => OVLFeed combos? ... Look to yearn controller/deployer
-
-2. How to implement governance for deployment?
-
-3. Where’s the treasury and fees in spec diagram?
-
-4. What does the oracle feed interface look like?
-
-5. How to make oracle feed interface so general that can accommodate Uniswap and Chainlink
-
-6. Sell in fixed time increments to save on gas (pool gas fees until make trade)? Or every time user exits position, hit Uniswap and charge user (likely costly and slow)?
 
 ### Revenue Model
 
@@ -119,3 +102,18 @@ Eventually lend out the locked OVL from positions for capital efficiency and add
 8. Expiries?
 
 **(1, 2, 3) are good proof of concept (POC) for the hack. Include 4, maybe.**
+
+
+#### Questions
+
+1. How to deploy new OVLPosition => OVLFeed combos? ... Look to yearn controller/deployer
+
+2. How to implement governance for deployment?
+
+3. Where’s the treasury and fees in spec diagram?
+
+4. What does the oracle feed interface look like?
+
+5. How to make oracle feed interface so general that can accommodate Uniswap and Chainlink
+
+6. Sell in fixed time increments to save on gas (pool gas fees until make trade)? Or every time user exits position, hit Uniswap and charge user (likely costly and slow)?

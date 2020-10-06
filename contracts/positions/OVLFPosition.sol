@@ -22,17 +22,19 @@ contract OVLFPosition is ERC1155, IOVLPosition {
   OVLToken public token;
   address public governance;
   address public controller;
+  address public treasury; // TODO: should this and governance be the same?
 
   // TODO: params that should be settable by governance ...
-  uint256 private tradingFee;
   address private feed;
+  uint256 private tradeFeePerc;
+  uint256 private feeBurnPerc;
 
   struct FPosition {
-    uint256 balance;
     bool long;
     uint256 leverage;
+    uint256 balance;
     uint256 liquidationPrice;
-    uint256 price;
+    uint256 lockPrice;
   }
 
   mapping (uint256 => mapping(address => FPosition)) private _positions;
@@ -49,52 +51,50 @@ contract OVLFPosition is ERC1155, IOVLPosition {
     return _positions[_id][_account];
   }
 
+  // build() locks _amount in OVL into position
   function build(uint256 _amount, bool _long, uint256 _leverage) public virtual override {
+    uint256 tradeFee = _calcTradeFee(_amount, _leverage);
+    require(_amount > tradeFee, "OVLFPosition: must build position with amount larger than fees");
     token.safeTransferFrom(_msgSender(), address(this), _amount);
+    _amount = _amount.sub(tradeFee);
 
-    // TODO: Generate position ID, then fetch price from oracle
-    // feed to calculate position attrs
+    // Create the position NFT
     uint256 price = _getPriceFromFeed(); // TODO: Verify this is safe given calling external contract view method in effects
     uint256 id = _createPosition(_amount, _long, _leverage, price);
-
-    // TODO: Add in trade fees!
-
-    // Q: What should data param be for _mint?
     _mint(_msgSender(), id, _amount, abi.encodePacked(uint8(0x0)));
+    _transferFeesToTreasury(tradeFee);
   }
 
-  // TODO: add buildAll() here and in IOVLPosition.sol
+  function buildAll(bool _long, uint256 _leverage) public virtual override {
+    uint256 amount = token.balanceOf(_msgSender());
+    build(amount, _long, _leverage);
+  }
 
-  // uwind() unlocks _amount of position
+  // uwind() unlocks _amount in OVL from position
   function unwind(uint256 _id, uint256 _amount) public virtual override {
     uint256 price = _getPriceFromFeed(); // TODO: Verify this is safe given calling external contract view method in effects
     int256 profit =_updatePositionOnUnwind(_msgSender(), _id, _amount, price);
-
-    // TODO: Add in trade fees!
-
-    // Burn the position tokens being unwound
     _burn(_msgSender(), _id, _amount);
 
     if (profit > 0) {
-      // Mint the profit to this address first
       uint256 mintAmount = uint256(SignedMath.abs(profit));
       token.mint(mintAmount);
-
-      // Update the original unwind amount
       _amount = _amount.add(mintAmount);
     } else if (profit < 0) {
-      // Burn the loss from this address first; make sure don't burn more
-      // than original unwind amount
+      // Make sure don't burn more than original unwind amount
       uint256 burnAmount = Math.min(uint256(SignedMath.abs(profit)), _amount);
       token.burn(burnAmount);
-
-      // Update the original unwind amount
       _amount = _amount.sub(burnAmount);
     }
 
-    // Send principal + profit back to trader
+    FPosition memory pos = _positionOf(_msgSender(), _id);
+    uint256 tradeFee = _calcTradeFee(_amount, pos.leverage);
+    _amount = _amount.sub(tradeFee);
+
+    // Send principal + profit back to trader and fees to treasury
     if (_amount > 0) {
       token.safeTransfer(_msgSender(), _amount);
+      _transferFeesToTreasury(tradeFee);
     }
   }
 
@@ -108,26 +108,29 @@ contract OVLFPosition is ERC1155, IOVLPosition {
 
   }
 
+  function _transferFeesToTreasury(uint256 fees) private {
+    uint256 burnAmount = fees.mult(feeBurnPerc).div(100);
+    token.burn(burnAmount);
+
+    fees.sub(burnAmount);
+    token.safeTransfer(treasury, fees);
+  }
+
   function _createPosition(uint256 _amount, bool _long, uint256 _leverage, uint256 _price) private returns (uint256) {
-    // Generate the position id from pos attrs
     uint256 id = uint256(keccak256(abi.encodePacked(_long, _leverage, _price))); // TODO: Check this is safe
-
-    // Calculate the liquidation price
-    uint256 liquidationPrice = _calcLiquidationPrice(_long, _leverage, _price);
-
+    uint256 liquidationPrice = _calcLiquidationPrice(_amount, _long, _leverage, _price);
     _positions[id][_msgSender()] = FPosition(
-      _amount,
       _long,
       _leverage,
+      _amount,
       liquidationPrice,
       _price
     );
-
     return id;
   }
 
-  function _calcLiquidationPrice(bool _long, uint256 _leverage, uint256 _price) private view returns (uint256) {
-
+  function _calcTradeFee(uint256 _amount, uint256 _leverage) internal view returns (uint256) {
+    return _amount.mult(_leverage).mult(tradeFeePerc).div(100); // TODO: make sure this is right here
   }
 
   function _updatePositionOnUnwind(address _account, uint256 _id, uint256 _amount, uint256 _price) private returns (int256) {
@@ -136,17 +139,20 @@ contract OVLFPosition is ERC1155, IOVLPosition {
 
     // TODO: recalculate liquidationPrice
     pos.balance.sub(_amount);
-
     _positions[_id][_account] = pos;
 
     return profit;
   }
 
-  function _calcProfit(FPosition memory position, uint256 _amount, uint256 _price) private view returns (int256) {
+  function _calcLiquidationPrice(uint256 _amount, bool _long, uint256 _leverage, uint256 _price) internal view returns (uint256) {
 
   }
 
-  function _calcPercPnL(FPosition memory position, uint256 _price) private view returns (int256) {
+  function _calcProfit(FPosition memory position, uint256 _amount, uint256 _price) internal view returns (int256) {
+
+  }
+
+  function _calcPercPnL(FPosition memory position, uint256 _price) internal view returns (int256) {
 
   }
 }
