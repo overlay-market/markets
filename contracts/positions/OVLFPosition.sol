@@ -20,12 +20,15 @@ contract OVLFPosition is ERC1155, IOVLPosition {
   using SignedSafeMath for int256;
 
   OVLToken public token;
+
+  // Addresses that should be modifiable by governance
   address public governance;
   address public controller;
   address public treasury; // TODO: should this and governance be the same?
+  address private feed;
 
   // TODO: params that should be settable by governance ...
-  address private feed;
+  uint256 private maxLeverage;
   uint256 private tradeFeePerc;
   uint256 private feeBurnPerc;
 
@@ -39,11 +42,14 @@ contract OVLFPosition is ERC1155, IOVLPosition {
 
   mapping (uint256 => mapping(address => FPosition)) private _positions;
 
-  constructor(string memory _uri, address _token, address _controller, address _feed) public ERC1155(_uri) {
+  constructor(string memory _uri, address _token, address _controller, address _feed, uint256 _maxLeverage, uint256 _tradeFeePerc, uint256 _feeBurnPerc) public ERC1155(_uri) {
     token = OVLToken(_token);
     governance = _msgSender();
     controller = _controller;
     feed = _feed;
+    maxLeverage = _maxLeverage;
+    tradeFeePerc = _tradeFeePerc;
+    feeBurnPerc = _feeBurnPerc;
   }
 
   function _positionOf(address _account, uint256 _id) private view returns (FPosition memory) {
@@ -53,15 +59,18 @@ contract OVLFPosition is ERC1155, IOVLPosition {
 
   // build() locks _amount in OVL into position
   function build(uint256 _amount, bool _long, uint256 _leverage) public virtual override {
-    uint256 tradeFee = _calcTradeFee(_amount, _leverage);
-    require(_amount > tradeFee, "OVLFPosition: must build position with amount larger than fees");
+    require(_leverage >= 1, "OVLFPosition: must build position with leverage at least 1");
+    require(_leverage <= maxLeverage, "OVLFPosition: must build position with leverage less than max allowed");
+    uint256 fees = _calcFeeAmount(_amount, _leverage);
+    require(_amount > fees, "OVLFPosition: must build position with amount larger than fees");
+
     token.safeTransferFrom(_msgSender(), address(this), _amount);
-    _amount = _amount.sub(tradeFee);
+    _amount = _amount.sub(fees);
 
     // Create the position NFT
     uint256 id = _createPosition(_amount, _long, _leverage);
     _mint(_msgSender(), id, _amount, abi.encodePacked(uint8(0x0)));
-    _transferFeesToTreasury(tradeFee);
+    _transferFeesToTreasury(fees);
   }
 
   function buildAll(bool _long, uint256 _leverage) public virtual override {
@@ -86,13 +95,13 @@ contract OVLFPosition is ERC1155, IOVLPosition {
     }
 
     FPosition memory pos = _positionOf(_msgSender(), _id);
-    uint256 tradeFee = _calcTradeFee(_amount, pos.leverage);
-    _amount = _amount.sub(tradeFee);
+    uint256 fees = _calcFeeAmount(_amount, pos.leverage);
+    _amount = _amount.sub(fees);
 
     // Send principal + profit back to trader and fees to treasury
     if (_amount > 0) {
       token.safeTransfer(_msgSender(), _amount);
-      _transferFeesToTreasury(tradeFee);
+      _transferFeesToTreasury(fees);
     }
   }
 
@@ -128,8 +137,8 @@ contract OVLFPosition is ERC1155, IOVLPosition {
     return id;
   }
 
-  function _calcTradeFee(uint256 _amount, uint256 _leverage) internal view returns (uint256) {
-    return _amount.mul(_leverage).mul(tradeFeePerc).div(100); // TODO: make sure this is right here
+  function _calcFeeAmount(uint256 _amount, uint256 _leverage) internal view returns (uint256) {
+    return _amount.mul(_leverage).mul(tradeFeePerc).div(100);
   }
 
   function _updatePositionOnUnwind(address _account, uint256 _id, uint256 _amount) private returns (int256) {

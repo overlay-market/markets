@@ -66,7 +66,9 @@ interface OVLPosition {
        uint256 lockPrice;
     }
 
-   function build(uint256 _amount, bool _long, uint256 leverage) external;
+   function build(uint256 _amount, bool _long, uint256 _leverage) external;
+
+   function buildAll(bool _long, uint256 _leverage) external;
 
    function unwind(uint256 _id, uint256 _amount) external;
 
