@@ -12,4 +12,6 @@ interface IOVLPosition {
 
   function unwindAll(uint256 _id) external;
 
+  function liquidate(uint256 _id) external;
+
 }

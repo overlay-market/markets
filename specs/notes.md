@@ -60,9 +60,7 @@ interface OVLPosition {
 
     struct Position {
        bool long;
-       uint256 balance;
        uint256 leverage;
-       uint256 liquidationPrice;
        uint256 lockPrice;
     }
 
@@ -73,6 +71,8 @@ interface OVLPosition {
    function unwind(uint256 _id, uint256 _amount) external;
 
    function unwindAll(uint256 _id) external;
+
+   function liquidate(uint256 _id) external;
 
 }
 ```
