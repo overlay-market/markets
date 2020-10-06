@@ -119,7 +119,7 @@ contract OVLFPosition is ERC1155, IOVLPosition {
     uint256 burnAmount = fees.mul(feeBurnPerc).div(100);
     token.burn(burnAmount);
 
-    fees.sub(burnAmount);
+    fees = fees.sub(burnAmount);
     token.safeTransfer(treasury, fees);
   }
 
