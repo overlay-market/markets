@@ -229,8 +229,9 @@ contract OVLFPosition is ERC1155, IOVLPosition {
     FPosition memory pos = _positionOf(_id);
     int256 exit = int256(_price);
     int256 entry = int256(pos.lockPrice);
+    int256 side = pos.long ? int256(1) : int256(-1);
     int256 size = int256(_amount).mul(int256(pos.leverage));
-    return size.mul(exit.div(entry).sub(1)); // TODO: Check for any rounding errors
+    return size.mul(side).mul(exit.div(entry).sub(1)); // TODO: Check for any rounding errors
   }
 
   function _calcLiquidationPrice(FPosition memory pos) private pure returns (uint256) {
