@@ -116,14 +116,14 @@ contract OVLFPosition is ERC1155, IOVLPosition {
 
   function _createPosition(uint256 _amount, bool _long, uint256 _leverage) private returns (uint256) {
     uint256 price = _getPriceFromFeed();
-    uint256 id = uint256(keccak256(abi.encodePacked(_long, _leverage, _price))); // TODO: Check this is safe
-    uint256 liquidationPrice = _calcLiquidationPrice(_amount, _long, _leverage, _price);
+    uint256 id = uint256(keccak256(abi.encodePacked(_long, _leverage, price))); // TODO: Check this is safe
+    uint256 liquidationPrice = _calcLiquidationPrice(_amount, _long, _leverage, price);
     _positions[id][_msgSender()] = FPosition(
       _long,
       _leverage,
       _amount,
       liquidationPrice,
-      _price
+      price
     );
     return id;
   }
@@ -135,7 +135,7 @@ contract OVLFPosition is ERC1155, IOVLPosition {
   function _updatePositionOnUnwind(address _account, uint256 _id, uint256 _amount) private returns (int256) {
     FPosition memory pos = _positionOf(_account, _id);
     uint256 price = _getPriceFromFeed();
-    int256 profit = _calcProfit(pos, _amount, _price);
+    int256 profit = _calcProfit(pos, _amount, price);
 
     // TODO: recalculate liquidationPrice
     pos.balance.sub(_amount);
