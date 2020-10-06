@@ -51,6 +51,10 @@ contract OVLFPosition is ERC1155, IOVLPosition {
     feed = _feed;
   }
 
+  function _getId(bool _long, uint256 _leverage, uint256 _price) private pure returns (uint256) {
+    return uint256(keccak256(abi.encodePacked(_long, _leverage, _price))); // TODO: Check this is safe
+  }
+
   function _positionOf(uint256 _id) private view returns (FPosition memory) {
     return _positions[_id];
   }
@@ -66,28 +70,6 @@ contract OVLFPosition is ERC1155, IOVLPosition {
   function liquidationPriceOf(uint256 _id) public view returns (uint256) {
     FPosition memory pos = _positionOf(_id);
     return _calcLiquidationPrice(pos);
-  }
-
-  function _calcLiquidationPrice(FPosition memory pos) private pure returns (uint256) {
-    uint256 liquidationPrice = 0;
-    if (pos.long) {
-      // TODO: ...
-    } else {
-      // TODO: ...
-    }
-    return liquidationPrice;
-  }
-
-  function _canLiquidate(uint256 _id, uint256 _price) private view returns (bool) {
-    FPosition memory pos = _positionOf(_id);
-    uint256 liquidationPrice = _calcLiquidationPrice(pos);
-    bool can = false;
-    if (pos.long) {
-      can = (liquidationPrice >= _price);
-    } else {
-      can = (liquidationPrice <= _price);
-    }
-    return can;
   }
 
   // feed setters
@@ -242,6 +224,39 @@ contract OVLFPosition is ERC1155, IOVLPosition {
     return profit;
   }
 
+  function _calcProfit(uint256 _id, uint256 _amount, uint256 _price) internal view returns (int256) {
+    // pnl = (exit - entry)/entry * side * leverage * amount
+    FPosition memory pos = _positionOf(_id);
+    int256 exit = int256(_price);
+    int256 entry = int256(pos.lockPrice);
+    int256 size = int256(_amount).mul(int256(pos.leverage));
+    return size.mul(exit.div(entry).sub(1)); // TODO: Check for any rounding errors
+  }
+
+  function _calcLiquidationPrice(FPosition memory pos) private pure returns (uint256) {
+    uint256 liquidationPrice = 0;
+    if (pos.long) {
+      // liquidate = lockPrice * (1-1/leverage); liquidate when pnl = -amount so no debt
+      liquidationPrice = pos.lockPrice.mul(uint256(1).sub(uint256(1).div(pos.leverage)));
+    } else {
+      // liquidate = lockPrice * (1+1/leverage)
+      liquidationPrice = pos.lockPrice.mul(uint256(1).add(uint256(1).div(pos.leverage)));
+    }
+    return liquidationPrice;
+  }
+
+  function _canLiquidate(uint256 _id, uint256 _price) private view returns (bool) {
+    FPosition memory pos = _positionOf(_id);
+    uint256 liquidationPrice = _calcLiquidationPrice(pos);
+    bool can = false;
+    if (pos.long) {
+      can = (liquidationPrice >= _price);
+    } else {
+      can = (liquidationPrice <= _price);
+    }
+    return can;
+  }
+
   function _calcFeeAmount(uint256 _amount, uint256 _leverage) internal view returns (uint256) {
     return _amount.mul(_leverage).mul(tradeFee);
   }
@@ -252,13 +267,5 @@ contract OVLFPosition is ERC1155, IOVLPosition {
 
     fees = fees.sub(burnAmount);
     token.safeTransfer(treasury, fees);
-  }
-
-  function _getId(bool _long, uint256 _leverage, uint256 _price) private pure returns (uint256) {
-    return uint256(keccak256(abi.encodePacked(_long, _leverage, _price))); // TODO: Check this is safe
-  }
-
-  function _calcProfit(uint256 _id, uint256 _amount, uint256 _price) internal view returns (int256) {
-
   }
 }
