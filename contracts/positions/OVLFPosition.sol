@@ -21,11 +21,14 @@ contract OVLFPosition is ERC1155, IOVLPosition {
 
   OVLToken public token;
 
+  uint256 public constant BASE = 1e18;
+
   uint256 public lastPrice;
-  uint256 public maxLeverage = 100;
-  uint256 public tradeFee = uint256(15).div(10000);
-  uint256 public feeBurn = uint256(50).div(100);
-  uint256 public liquidateReward = uint256(50).div(100);
+  uint256 public minLeverage = BASE.div(10);
+  uint256 public maxLeverage = BASE.mul(100);
+  uint256 public tradeFee = BASE.mul(15).div(10000);
+  uint256 public feeBurn = BASE.mul(50).div(100);
+  uint256 public liquidateReward = BASE.mul(50).div(100);
 
   address public governance;
   address public treasury;
@@ -51,83 +54,9 @@ contract OVLFPosition is ERC1155, IOVLPosition {
     feed = _feed;
   }
 
-  function _getId(bool _long, uint256 _leverage, uint256 _price) private pure returns (uint256) {
-    return uint256(keccak256(abi.encodePacked(_long, _leverage, _price))); // TODO: Check this is safe
-  }
-
-  function _positionOf(uint256 _id) private view returns (FPosition memory) {
-    return _positions[_id];
-  }
-
-  function amountLockedIn(uint256 _id) public view returns (uint256) {
-    return _amounts[_id];
-  }
-
-  function _positionExists(uint256 _id) private view returns (bool) {
-    return _exists[_id];
-  }
-
-  function liquidationPriceOf(uint256 _id) public view returns (uint256) {
-    FPosition memory pos = _positionOf(_id);
-    return _calcLiquidationPrice(pos);
-  }
-
-  // feed setters
-  modifier onlyFeed() {
-    require(feed == _msgSender(), "OVLFPosition: caller is not feed");
-    _;
-  }
-
-  function _getPriceFromFeed() internal returns (uint256) {
-    require(lastPrice != 0, "OVLFPosition: feed has not given a price yet");
-    return lastPrice;
-  }
-
-  function setLastPrice(uint256 _price) external onlyFeed {
-    lastPrice = _price;
-  }
-
-  // gov setters
-  modifier onlyGov() {
-    require(governance == _msgSender(), "OVLFPosition: caller is not governance");
-    _;
-  }
-
-  function setMaxLeverage(uint256 _max) external onlyGov {
-    maxLeverage = _max;
-  }
-
-  function setTradeFee(uint256 _fee) external onlyGov {
-    tradeFee = _fee;
-  }
-
-  function setFeeBurn(uint256 _fee) external onlyGov {
-    feeBurn = _fee;
-  }
-
-  function setLiquidateReward(uint256 _rew) external onlyGov {
-    liquidateReward = _rew;
-  }
-
-  function setGovernance(address _gov) public onlyGov {
-    governance = _gov;
-  }
-
-  function setTreasury(address _treasury) public onlyGov {
-    treasury = _treasury;
-  }
-
-  function setController(address _controller) public onlyGov {
-    controller = _controller;
-  }
-
-  function setFeed(address _feed) public onlyGov {
-    feed = _feed;
-  }
-
   // build() locks _amount in OVL into position
   function build(uint256 _amount, bool _long, uint256 _leverage) public virtual override {
-    require(_leverage >= 1, "OVLFPosition: must build position with leverage at least 1");
+    require(_leverage >= minLeverage, "OVLFPosition: must build position with leverage greater than min allowed");
     require(_leverage <= maxLeverage, "OVLFPosition: must build position with leverage less than max allowed");
     uint256 fees = _calcFeeAmount(_amount, _leverage);
     require(_amount > fees, "OVLFPosition: must build position with amount larger than fees");
@@ -191,9 +120,9 @@ contract OVLFPosition is ERC1155, IOVLPosition {
     _amounts[_id] = 0;
 
     // send fees to treasury and transfer rest to liquidater
-    uint256 rew = amount.mul(liquidateReward);
-    amount = amount.sub(rew);
-    token.safeTransfer(_msgSender(), rew);
+    uint256 reward = amount.mul(liquidateReward).div(BASE);
+    amount = amount.sub(reward);
+    token.safeTransfer(_msgSender(), reward);
     _transferFeesToTreasury(amount);
   }
 
@@ -231,17 +160,18 @@ contract OVLFPosition is ERC1155, IOVLPosition {
     int256 entry = int256(pos.lockPrice);
     int256 side = pos.long ? int256(1) : int256(-1);
     int256 size = int256(_amount).mul(int256(pos.leverage));
-    return size.mul(side).mul(exit.div(entry).sub(1)); // TODO: Check for any rounding errors
+    int256 ratio = exit.sub(entry).mul(int256(BASE)).div(entry);
+    return size.mul(side).mul(ratio).div(BASE).div(BASE); // TODO: Check for any rounding errors
   }
 
   function _calcLiquidationPrice(FPosition memory pos) private pure returns (uint256) {
     uint256 liquidationPrice = 0;
     if (pos.long) {
       // liquidate = lockPrice * (1-1/leverage); liquidate when pnl = -amount so no debt
-      liquidationPrice = pos.lockPrice.mul(uint256(1).sub(uint256(1).div(pos.leverage)));
+      liquidationPrice = pos.lockPrice.mul(pos.leverage.sub(BASE)).div(pos.leverage);
     } else {
       // liquidate = lockPrice * (1+1/leverage)
-      liquidationPrice = pos.lockPrice.mul(uint256(1).add(uint256(1).div(pos.leverage)));
+      liquidationPrice = pos.lockPrice.mul(pos.leverage.add(BASE)).div(pos.leverage);
     }
     return liquidationPrice;
   }
@@ -259,14 +189,92 @@ contract OVLFPosition is ERC1155, IOVLPosition {
   }
 
   function _calcFeeAmount(uint256 _amount, uint256 _leverage) internal view returns (uint256) {
-    return _amount.mul(_leverage).mul(tradeFee);
+    return _amount.mul(_leverage).mul(tradeFee).div(BASE).div(BASE);
   }
 
   function _transferFeesToTreasury(uint256 fees) private {
-    uint256 burnAmount = fees.mul(feeBurn);
+    uint256 burnAmount = fees.mul(feeBurn).div(BASE);
     token.burn(burnAmount);
 
     fees = fees.sub(burnAmount);
     token.safeTransfer(treasury, fees);
+  }
+
+  function _getId(bool _long, uint256 _leverage, uint256 _price) private pure returns (uint256) {
+    return uint256(keccak256(abi.encodePacked(_long, _leverage, _price))); // TODO: Check this is safe
+  }
+
+  function _positionOf(uint256 _id) private view returns (FPosition memory) {
+    return _positions[_id];
+  }
+
+  function amountLockedIn(uint256 _id) public view returns (uint256) {
+    return _amounts[_id];
+  }
+
+  function _positionExists(uint256 _id) private view returns (bool) {
+    return _exists[_id];
+  }
+
+  function liquidationPriceOf(uint256 _id) public view returns (uint256) {
+    FPosition memory pos = _positionOf(_id);
+    return _calcLiquidationPrice(pos);
+  }
+
+  // feed setters
+  modifier onlyFeed() {
+    require(feed == _msgSender(), "OVLFPosition: caller is not feed");
+    _;
+  }
+
+  function _getPriceFromFeed() internal returns (uint256) {
+    require(lastPrice != 0, "OVLFPosition: feed has not given a price yet");
+    return lastPrice;
+  }
+
+  function setLastPrice(uint256 _price) external onlyFeed {
+    lastPrice = _price;
+  }
+
+  // gov setters
+  modifier onlyGov() {
+    require(governance == _msgSender(), "OVLFPosition: caller is not governance");
+    _;
+  }
+
+  function setMinLeverage(uint256 _min) external onlyGov {
+    minLeverage = _min;
+  }
+
+  function setMaxLeverage(uint256 _max) external onlyGov {
+    maxLeverage = _max;
+  }
+
+  function setTradeFee(uint256 _fee) external onlyGov {
+    tradeFee = _fee;
+  }
+
+  function setFeeBurn(uint256 _fee) external onlyGov {
+    feeBurn = _fee;
+  }
+
+  function setLiquidateReward(uint256 _rew) external onlyGov {
+    liquidateReward = _rew;
+  }
+
+  function setGovernance(address _gov) public onlyGov {
+    governance = _gov;
+  }
+
+  function setTreasury(address _treasury) public onlyGov {
+    treasury = _treasury;
+  }
+
+  function setController(address _controller) public onlyGov {
+    controller = _controller;
+  }
+
+  function setFeed(address _feed) public onlyGov {
+    feed = _feed;
   }
 }

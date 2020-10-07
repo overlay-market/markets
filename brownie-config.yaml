@@ -5,12 +5,14 @@ autofetch_sources: True
 
 dependencies:
   - OpenZeppelin/openzeppelin-contracts@3.1.0
+  - Uniswap/uniswap-lib@1.1.1
 
 compiler:
   solc:
     version: 0.6.2
     remappings:
       - "@openzeppelinV3=OpenZeppelin/openzeppelin-contracts@3.1.0"
+      - "@uniswap/lib=Uniswap/uniswap-lib@1.1.1"
 
 reports:
   exclude_contracts:
