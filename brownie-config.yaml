@@ -9,7 +9,7 @@ dependencies:
 
 compiler:
   solc:
-    version: 0.6.2
+    version: 0.6.8
     remappings:
       - "@openzeppelinV3=OpenZeppelin/openzeppelin-contracts@3.1.0"
       - "@uniswap/lib=Uniswap/uniswap-lib@1.1.1"

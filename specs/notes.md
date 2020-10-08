@@ -6,11 +6,6 @@
 2. Gives holders governance stake in proposed data feeds and tuning of their risk parameters
 3. Gives holders governance control over treasury: revenue from fees assessed on each trade.
 
-Three phases for initial token distribution (~ 10% to alpha testers, ~ 90% to yield farmers):
-1. Token claim for alpha testers of trading mechanism (~ 10%)
-2. Beta yield farming of $OVL with other Uniswap token pools: $SNXETH, $AAVEETH, $WBTCETH, etc.
-3. Beta yield farming of more $OVL with seeded Uniswap $OVL/$ETH LP tokens
-
 ### OVL Position (ERC1155)
 
 - NFT representing a trader's position,  received upon locking up OVL in a trade on a data stream
@@ -91,6 +86,14 @@ To incentivize OVLETH liquidity providers and governance contributors for eterni
 - 50% (25% of total fees) to governance $OVL stakers that vote
 
 Eventually lend out the locked OVL from positions for capital efficiency and additional revenue.
+
+### Token Distribution
+
+Three phases for initial token distribution (~ 10% to alpha testers, ~ 90% to yield farmers):
+1. Token claim for alpha testers of trading mechanism (~ 10%)
+2. Beta yield farming of $OVL with other Uniswap token pools: $SNXETH, $AAVEETH, $WBTCETH, etc.
+3. Beta yield farming of more $OVL with seeded Uniswap $OVL/$ETH LP tokens
+
 
 ### Roadmap
 
