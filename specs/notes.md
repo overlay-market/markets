@@ -3,8 +3,10 @@
 ### OVL Token (ERC20)
 
 1. Allows holders to participate in long/short trading of data streams
+
 2. Gives holders governance stake in proposed data feeds and tuning of their risk parameters
-3. Gives holders governance control over treasury: revenue from fees assessed on each trade.
+
+3. Gives holders governance control over treasury: revenue from fees on each trade.
 
 ### OVL Position (ERC1155)
 
@@ -81,7 +83,7 @@ Fees (in $OVL): 0.15% per trade, adjustable by governance on feed-by-feed basis
 - 50% is burned
 - 50% is sold for ETH via Uniswap through treasury
 
-To incentivize OVLETH liquidity providers and governance contributors for eternity, take the 50% of the ETH to treasury and divide evenly between
+To incentivize OVLETH liquidity providers and governance contributors in perpetuity, take the 50% of the ETH to treasury and divide evenly between
 - 50% (25% of total fees) to OVLETH LPs staking
 - 50% (25% of total fees) to governance $OVL stakers that vote
 

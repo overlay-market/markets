@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-pragma solidity ^0.6.0;
+pragma solidity ^0.6.2;
 
 import "@openzeppelinV3/contracts/math/Math.sol";
 import "@openzeppelinV3/contracts/math/SafeMath.sol";
@@ -25,22 +25,22 @@ contract OVLFPosition is ERC1155, IOVLPosition {
 
   uint256 public constant BASE = 1e18;
 
-  uint256 public lastPrice;
   uint256 public minLeverage = BASE.div(10);
   uint256 public maxLeverage = BASE.mul(100);
   uint256 public tradeFee = BASE.mul(15).div(10000);
   uint256 public feeBurn = BASE.mul(50).div(100);
   uint256 public liquidateReward = BASE.mul(50).div(100);
 
+  int256 public lastPrice;
+
   address public governance;
   address public treasury;
-  address public controller;
   address public feed;
 
   struct FPosition {
     bool long;
     uint256 leverage;
-    uint256 lockPrice;
+    int256 lockPrice;
   }
 
   mapping (uint256 => FPosition) private _positions;
@@ -48,11 +48,12 @@ contract OVLFPosition is ERC1155, IOVLPosition {
 
   EnumerableSet.UintSet private _open;
 
-  constructor(string memory _uri, address _token, address _controller, address _feed) public ERC1155(_uri) {
+  bool private _feedInitialized = false;
+
+  constructor(string memory _uri, address _token, address _feed) public ERC1155(_uri) {
     token = OVLToken(_token);
     governance = _msgSender();
     treasury = _msgSender();
-    controller = _controller;
     feed = _feed;
   }
 
@@ -115,7 +116,7 @@ contract OVLFPosition is ERC1155, IOVLPosition {
   // liquidate() burns underwater positions
   function liquidate(uint256 _id) public virtual override {
     require(_positionExists(_id), "OVLFPosition: position must exist");
-    uint256 price = _getPriceFromFeed();
+    int256 price = _getPriceFromFeed();
     require(_canLiquidate(_id, price), "OVLFPosition: position must be underwater");
 
     uint256 amount = amountLockedIn(_id);
@@ -131,7 +132,7 @@ contract OVLFPosition is ERC1155, IOVLPosition {
 
   // liquidatable() lists underwater positions
   function liquidatable() public virtual override returns (uint256[] memory) {
-    uint256 price = _getPriceFromFeed();
+    int256 price = _getPriceFromFeed();
     uint256[] memory liqs = new uint256[](_open.length()); // TODO: len > liqs.length, which produces empty zero values at the end of ret array. Is this a problem ever with keccak() ids and an edge case?
     for (uint256 i=0; i < _open.length(); i++) {
       uint256 id = _open.at(i);
@@ -143,7 +144,7 @@ contract OVLFPosition is ERC1155, IOVLPosition {
   }
 
   function _enterPosition(uint256 _amount, bool _long, uint256 _leverage) private returns (uint256) {
-    uint256 price = _getPriceFromFeed();
+    int256 price = _getPriceFromFeed();
     uint256 id = _getId(_long, _leverage, price);
 
     if (!_positionExists(id)) {
@@ -159,7 +160,7 @@ contract OVLFPosition is ERC1155, IOVLPosition {
   }
 
   function _exitPosition(uint256 _id, uint256 _amount) private returns (int256) {
-    uint256 price = _getPriceFromFeed();
+    int256 price = _getPriceFromFeed();
     int256 profit = _calcProfit(_id, _amount, price);
 
     // update total locked amount
@@ -169,32 +170,30 @@ contract OVLFPosition is ERC1155, IOVLPosition {
     return profit;
   }
 
-  function _calcProfit(uint256 _id, uint256 _amount, uint256 _price) internal view returns (int256) {
+  function _calcProfit(uint256 _id, uint256 _amount, int256 _price) internal view returns (int256) {
     // pnl = (exit - entry)/entry * side * leverage * amount
     FPosition memory pos = _positionOf(_id);
-    int256 exit = int256(_price);
-    int256 entry = int256(pos.lockPrice);
     int256 side = pos.long ? int256(1) : int256(-1);
     int256 size = int256(_amount).mul(int256(pos.leverage));
-    int256 ratio = exit.sub(entry).mul(int256(BASE)).div(entry);
+    int256 ratio = _price.sub(pos.lockPrice).mul(int256(BASE)).div(pos.lockPrice);
     return size.mul(side).mul(ratio).div(int256(BASE)).div(int256(BASE)); // TODO: Check for any rounding errors
   }
 
-  function _calcLiquidationPrice(FPosition memory pos) private pure returns (uint256) {
-    uint256 liquidationPrice = 0;
+  function _calcLiquidationPrice(FPosition memory pos) private pure returns (int256) {
+    int256 liquidationPrice;
     if (pos.long) {
       // liquidate = lockPrice * (1-1/leverage); liquidate when pnl = -amount so no debt
-      liquidationPrice = pos.lockPrice.mul(pos.leverage.sub(BASE)).div(pos.leverage);
+      liquidationPrice = pos.lockPrice.mul(int256(pos.leverage.sub(BASE))).div(int256(pos.leverage));
     } else {
       // liquidate = lockPrice * (1+1/leverage)
-      liquidationPrice = pos.lockPrice.mul(pos.leverage.add(BASE)).div(pos.leverage);
+      liquidationPrice = pos.lockPrice.mul(int256(pos.leverage.add(BASE))).div(int256(pos.leverage));
     }
     return liquidationPrice;
   }
 
-  function _canLiquidate(uint256 _id, uint256 _price) private view returns (bool) {
+  function _canLiquidate(uint256 _id, int256 _price) private view returns (bool) {
     FPosition memory pos = _positionOf(_id);
-    uint256 liquidationPrice = _calcLiquidationPrice(pos);
+    int256 liquidationPrice = _calcLiquidationPrice(pos);
     bool can = false;
     if (pos.long) {
       can = (liquidationPrice >= _price);
@@ -217,7 +216,7 @@ contract OVLFPosition is ERC1155, IOVLPosition {
   }
 
   // pos attr views
-  function _getId(bool _long, uint256 _leverage, uint256 _price) private pure returns (uint256) {
+  function _getId(bool _long, uint256 _leverage, int256 _price) private pure returns (uint256) {
     return uint256(keccak256(abi.encodePacked(_long, _leverage, _price))); // TODO: Check this is safe
   }
 
@@ -243,12 +242,12 @@ contract OVLFPosition is ERC1155, IOVLPosition {
     return pos.leverage;
   }
 
-  function lockPriceOf(uint256 _id) public view returns (uint256) {
+  function lockPriceOf(uint256 _id) public view returns (int256) {
     FPosition memory pos = _positionOf(_id);
     return pos.lockPrice;
   }
 
-  function liquidationPriceOf(uint256 _id) public view returns (uint256) {
+  function liquidationPriceOf(uint256 _id) public view returns (int256) {
     FPosition memory pos = _positionOf(_id);
     return _calcLiquidationPrice(pos);
   }
@@ -268,12 +267,15 @@ contract OVLFPosition is ERC1155, IOVLPosition {
     _;
   }
 
-  function _getPriceFromFeed() internal returns (uint256) {
-    require(lastPrice != 0, "OVLFPosition: feed has not given a price yet");
+  function _getPriceFromFeed() internal returns (int256) {
+    require(_feedInitialized, "OVLFPosition: feed has not given a price yet");
     return lastPrice;
   }
 
-  function setLastPrice(uint256 _price) external onlyFeed {
+  function updatePrice(int256 _price) external override onlyFeed {
+    if (!_feedInitialized) {
+      _feedInitialized = true;
+    }
     lastPrice = _price;
   }
 
@@ -309,10 +311,6 @@ contract OVLFPosition is ERC1155, IOVLPosition {
 
   function setTreasury(address _treasury) public onlyGov {
     treasury = _treasury;
-  }
-
-  function setController(address _controller) public onlyGov {
-    controller = _controller;
   }
 
   function setFeed(address _feed) public onlyGov {
