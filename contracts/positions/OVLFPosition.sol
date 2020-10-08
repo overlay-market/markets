@@ -218,6 +218,7 @@ contract OVLFPosition is ERC1155, IOVLPosition {
     token.safeTransfer(treasury, fees);
   }
 
+  // pos attr views
   function _getId(bool _long, uint256 _leverage, uint256 _price) private pure returns (uint256) {
     return uint256(keccak256(abi.encodePacked(_long, _leverage, _price))); // TODO: Check this is safe
   }
@@ -226,12 +227,27 @@ contract OVLFPosition is ERC1155, IOVLPosition {
     return _positions[_id];
   }
 
+  function _positionExists(uint256 _id) private view returns (bool) {
+    return _open.contains(_id);
+  }
+
   function amountLockedIn(uint256 _id) public view returns (uint256) {
     return _amounts[_id];
   }
 
-  function _positionExists(uint256 _id) private view returns (bool) {
-    return _open.contains(_id);
+  function isLong(uint256 _id) public view returns (bool) {
+    FPosition memory pos = _positionOf(_id);
+    return pos.long;
+  }
+
+  function leverageOf(uint256 _id) public view returns (uint256) {
+    FPosition memory pos = _positionOf(_id);
+    return pos.leverage;
+  }
+
+  function lockPriceOf(uint256 _id) public view returns (uint256) {
+    FPosition memory pos = _positionOf(_id);
+    return pos.lockPrice;
   }
 
   function liquidationPriceOf(uint256 _id) public view returns (uint256) {
