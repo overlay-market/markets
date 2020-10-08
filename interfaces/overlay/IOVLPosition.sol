@@ -14,4 +14,6 @@ interface IOVLPosition {
 
   function liquidate(uint256 _id) external;
 
+  function liquidatable() external returns (uint256[] memory);
+
 }

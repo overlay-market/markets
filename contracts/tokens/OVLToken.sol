@@ -12,7 +12,7 @@ contract OVLToken is ERC20, AccessControl, IOVLToken {
   bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
   constructor(string memory name, string memory symbol) public ERC20(name, symbol) {
-    _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
+    _setupRole(DEFAULT_ADMIN_ROLE, _msgSender()); // governance
   }
 
   function mint(uint256 _amount) public virtual override {

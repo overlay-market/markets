@@ -6,6 +6,7 @@ import "@openzeppelinV3/contracts/math/Math.sol";
 import "@openzeppelinV3/contracts/math/SafeMath.sol";
 import "@openzeppelinV3/contracts/math/SignedSafeMath.sol";
 import "@openzeppelinV3/contracts/utils/Address.sol";
+import "@openzeppelinV3/contracts/utils/EnumerableSet.sol";
 import "@openzeppelinV3/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelinV3/contracts/token/ERC1155/ERC1155.sol";
 
@@ -18,6 +19,7 @@ contract OVLFPosition is ERC1155, IOVLPosition {
   using Address for address;
   using SafeMath for uint256;
   using SignedSafeMath for int256;
+  using EnumerableSet for EnumerableSet.UintSet;
 
   OVLToken public token;
 
@@ -42,9 +44,9 @@ contract OVLFPosition is ERC1155, IOVLPosition {
   }
 
   mapping (uint256 => FPosition) private _positions;
-  mapping (uint256 => bool) private _exists;
   mapping (uint256 => uint256) private _amounts; // total OVL amount locked in position
 
+  EnumerableSet.UintSet private _open;
 
   constructor(string memory _uri, address _token, address _controller, address _feed) public ERC1155(_uri) {
     token = OVLToken(_token);
@@ -118,6 +120,7 @@ contract OVLFPosition is ERC1155, IOVLPosition {
 
     uint256 amount = amountLockedIn(_id);
     _amounts[_id] = 0;
+    _open.remove(_id);
 
     // send fees to treasury and transfer rest to liquidater
     uint256 reward = amount.mul(liquidateReward).div(BASE);
@@ -126,13 +129,28 @@ contract OVLFPosition is ERC1155, IOVLPosition {
     _transferFeesToTreasury(amount);
   }
 
+  // liquidatable() lists underwater positions
+  function liquidatable() public virtual override returns (uint256[] memory) {
+    uint256 price = _getPriceFromFeed();
+
+    uint256 len = _open.length();
+    uint256[] memory liqs = new uint256[](len); // TODO: len > liqs.length, which produces empty zero values at the end of ret array. Is this a problem ever with keccak() ids and an edge case?
+    for (uint256 i=0; i < len; i++) {
+      uint256 id = _open.at(i);
+      if (_canLiquidate(id, price)) {
+        liqs[i] = id;
+      }
+    }
+    return liqs;
+  }
+
   function _enterPosition(uint256 _amount, bool _long, uint256 _leverage) private returns (uint256) {
     uint256 price = _getPriceFromFeed();
     uint256 id = _getId(_long, _leverage, price);
 
     if (!_positionExists(id)) {
       _positions[id] = FPosition(_long, _leverage, price);
-      _exists[id] = true;
+      _open.add(id);
     }
 
     // update total locked amount
@@ -213,7 +231,7 @@ contract OVLFPosition is ERC1155, IOVLPosition {
   }
 
   function _positionExists(uint256 _id) private view returns (bool) {
-    return _exists[_id];
+    return _open.contains(_id);
   }
 
   function liquidationPriceOf(uint256 _id) public view returns (uint256) {
