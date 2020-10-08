@@ -74,10 +74,10 @@ interface OVLPosition {
 
    function liquidate(uint256 _id) external;
 
+   function liquidatable() external returns (uint256[] memory);
+
 }
 ```
-
-- Slightly diff architecture than firebase functions here in sense that once enter a position, get an NFT. Can’t unwind into completely opposite direction (i.e. switch from long to short requires locking in a new separate position)
 
 ### Revenue Model
 
@@ -108,14 +108,14 @@ Eventually lend out the locked OVL from positions for capital efficiency and add
 
 #### Questions
 
-1. How to deploy new OVLPosition => OVLFeed combos? ... Look to yearn controller/deployer
+1. How to deploy new OVLPosition => OVLFeed combos? ... Look to yearn controller/deployer []
 
-2. How to implement governance for deployment?
+2. How to implement governance for deployment? []
 
-3. Where’s the treasury and fees in spec diagram?
+3. Where’s the treasury and fees in spec diagram? [x]
 
-4. What does the oracle feed interface look like?
+4. What does the oracle feed interface look like? []
 
-5. How to make oracle feed interface so general that can accommodate Uniswap and Chainlink
+5. How to make oracle feed interface so general that can accommodate Uniswap and Chainlink []
 
-6. Sell in fixed time increments to save on gas (pool gas fees until make trade)? Or every time user exits position, hit Uniswap and charge user (likely costly and slow)?
+6. Sell in fixed time increments to save on gas (pool gas fees until make trade)? Or every time user exits position, hit Uniswap and charge user (likely costly and slow)? []
