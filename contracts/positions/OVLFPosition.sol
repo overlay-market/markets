@@ -24,12 +24,12 @@ contract OVLFPosition is ERC1155, IOVLPosition {
   OVLToken public token;
 
   uint256 public constant BASE = 1e18;
+  uint256 public constant MIN_LEVERAGE = 1e17;
+  uint256 public constant FEE_BURN = 50 * 1e16;
+  uint256 public constant LIQUIDATE_REWARD = 50 * 1e16;
 
-  uint256 public minLeverage = BASE.div(10);
   uint256 public maxLeverage = BASE.mul(100);
   uint256 public tradeFee = BASE.mul(15).div(10000);
-  uint256 public feeBurn = BASE.mul(50).div(100);
-  uint256 public liquidateReward = BASE.mul(50).div(100);
 
   int256 public lastPrice;
 
@@ -59,7 +59,7 @@ contract OVLFPosition is ERC1155, IOVLPosition {
 
   // build() locks _amount in OVL into position
   function build(uint256 _amount, bool _long, uint256 _leverage) public virtual override {
-    require(_leverage >= minLeverage, "OVLFPosition: must build position with leverage greater than min allowed");
+    require(_leverage >= MIN_LEVERAGE, "OVLFPosition: must build position with leverage greater than min allowed");
     require(_leverage <= maxLeverage, "OVLFPosition: must build position with leverage less than max allowed");
     uint256 fees = _calcFeeAmount(_amount, _leverage);
     require(_amount > fees, "OVLFPosition: must build position with amount larger than fees");
@@ -124,7 +124,7 @@ contract OVLFPosition is ERC1155, IOVLPosition {
     _open.remove(_id);
 
     // send fees to treasury and transfer rest to liquidater
-    uint256 reward = amount.mul(liquidateReward).div(BASE);
+    uint256 reward = amount.mul(LIQUIDATE_REWARD).div(BASE);
     amount = amount.sub(reward);
     token.safeTransfer(_msgSender(), reward);
     _transferFeesToTreasury(amount);
@@ -208,7 +208,7 @@ contract OVLFPosition is ERC1155, IOVLPosition {
   }
 
   function _transferFeesToTreasury(uint256 fees) private {
-    uint256 burnAmount = fees.mul(feeBurn).div(BASE);
+    uint256 burnAmount = fees.mul(FEE_BURN).div(BASE);
     token.burn(burnAmount);
 
     fees = fees.sub(burnAmount);
@@ -285,24 +285,12 @@ contract OVLFPosition is ERC1155, IOVLPosition {
     _;
   }
 
-  function setMinLeverage(uint256 _min) external onlyGov {
-    minLeverage = _min;
-  }
-
   function setMaxLeverage(uint256 _max) external onlyGov {
     maxLeverage = _max;
   }
 
   function setTradeFee(uint256 _fee) external onlyGov {
     tradeFee = _fee;
-  }
-
-  function setFeeBurn(uint256 _fee) external onlyGov {
-    feeBurn = _fee;
-  }
-
-  function setLiquidateReward(uint256 _rew) external onlyGov {
-    liquidateReward = _rew;
   }
 
   function setGovernance(address _gov) public onlyGov {

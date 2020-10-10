@@ -10,8 +10,6 @@ import "../../interfaces/overlay/IOVLFeed.sol";
 import "../../interfaces/overlay/IOVLPosition.sol";
 
 contract OVLChainlinkFeed is Context, IOVLFeed {
-  using SignedSafeMath for int256;
-
   AggregatorV3Interface internal chainlink;
   IOVLPosition public market;
   address public governance;
