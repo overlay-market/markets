@@ -4,6 +4,6 @@ pragma solidity ^0.6.0;
 
 interface IOVLFeed {
 
-  function update() external;
+  function getData() external returns (int256);
 
 }

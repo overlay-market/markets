@@ -16,6 +16,4 @@ interface IOVLPosition {
 
   function liquidatable() external returns (uint256[] memory);
 
-  function updatePrice(int256 _price) external;
-
 }

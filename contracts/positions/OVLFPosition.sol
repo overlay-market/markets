@@ -13,6 +13,7 @@ import "@openzeppelinV3/contracts/token/ERC1155/ERC1155.sol";
 import "../tokens/OVLToken.sol";
 import "../utils/SignedMath.sol";
 import "../../interfaces/overlay/IOVLPosition.sol";
+import "../../interfaces/overlay/IOVLFeed.sol";
 
 contract OVLFPosition is ERC1155, IOVLPosition {
   using SafeERC20 for OVLToken;
@@ -22,6 +23,7 @@ contract OVLFPosition is ERC1155, IOVLPosition {
   using EnumerableSet for EnumerableSet.UintSet;
 
   OVLToken public token;
+  IOVLFeed public feed;
 
   uint256 public constant BASE = 1e18;
   uint256 public constant MIN_LEVERAGE = 1e17;
@@ -31,11 +33,8 @@ contract OVLFPosition is ERC1155, IOVLPosition {
   uint256 public maxLeverage = BASE.mul(100);
   uint256 public tradeFee = BASE.mul(15).div(10000);
 
-  int256 public lastPrice;
-
   address public governance;
   address public treasury;
-  address public feed;
 
   struct FPosition {
     bool long;
@@ -48,17 +47,16 @@ contract OVLFPosition is ERC1155, IOVLPosition {
 
   EnumerableSet.UintSet private _open;
 
-  bool private _feedInitialized = false;
-
   constructor(string memory _uri, address _token, address _feed) public ERC1155(_uri) {
     token = OVLToken(_token);
     governance = _msgSender();
     treasury = _msgSender();
-    feed = _feed;
+    feed = IOVLFeed(_feed);
   }
 
   // build() locks _amount in OVL into position
   function build(uint256 _amount, bool _long, uint256 _leverage) public virtual override {
+    require(_amount > 0, "OVLFPosition: must build position with amount greater than zero");
     require(_leverage >= MIN_LEVERAGE, "OVLFPosition: must build position with leverage greater than min allowed");
     require(_leverage <= maxLeverage, "OVLFPosition: must build position with leverage less than max allowed");
     uint256 fees = _calcFeeAmount(_amount, _leverage);
@@ -81,6 +79,7 @@ contract OVLFPosition is ERC1155, IOVLPosition {
   // uwind() unlocks _amount in OVL from position
   function unwind(uint256 _id, uint256 _amount) public virtual override {
     // 1:1 bw share of position (balance) and OVL locked for FPosition
+    require(_amount > 0, "OVLFPosition: must unwind position with amount greater than zero");
     require(_amount <= amountLockedIn(_id), "OVLFPosition: not enough locked in pool to unwind amount");
     _burn(_msgSender(), _id, _amount);
     int256 profit = _exitPosition(_id, _amount);
@@ -116,7 +115,7 @@ contract OVLFPosition is ERC1155, IOVLPosition {
   // liquidate() burns underwater positions
   function liquidate(uint256 _id) public virtual override {
     require(_positionExists(_id), "OVLFPosition: position must exist");
-    int256 price = _getPriceFromFeed();
+    int256 price = feed.getData();
     require(_canLiquidate(_id, price), "OVLFPosition: position must be underwater");
 
     uint256 amount = amountLockedIn(_id);
@@ -132,7 +131,7 @@ contract OVLFPosition is ERC1155, IOVLPosition {
 
   // liquidatable() lists underwater positions
   function liquidatable() public virtual override returns (uint256[] memory) {
-    int256 price = _getPriceFromFeed();
+    int256 price = feed.getData();
     uint256[] memory liqs = new uint256[](_open.length()); // TODO: len > liqs.length, which produces empty zero values at the end of ret array. Is this a problem ever with keccak() ids and an edge case?
     for (uint256 i=0; i < _open.length(); i++) {
       uint256 id = _open.at(i);
@@ -144,7 +143,7 @@ contract OVLFPosition is ERC1155, IOVLPosition {
   }
 
   function _enterPosition(uint256 _amount, bool _long, uint256 _leverage) private returns (uint256) {
-    int256 price = _getPriceFromFeed();
+    int256 price = feed.getData();
     uint256 id = _getId(_long, _leverage, price);
 
     if (!_positionExists(id)) {
@@ -160,7 +159,7 @@ contract OVLFPosition is ERC1155, IOVLPosition {
   }
 
   function _exitPosition(uint256 _id, uint256 _amount) private returns (int256) {
-    int256 price = _getPriceFromFeed();
+    int256 price = feed.getData();
     int256 profit = _calcProfit(_id, _amount, price);
 
     // update total locked amount
@@ -261,24 +260,6 @@ contract OVLFPosition is ERC1155, IOVLPosition {
     return ps;
   }
 
-  // feed setters
-  modifier onlyFeed() {
-    require(feed == _msgSender(), "OVLFPosition: caller is not feed");
-    _;
-  }
-
-  function _getPriceFromFeed() internal returns (int256) {
-    require(_feedInitialized, "OVLFPosition: feed has not given a price yet");
-    return lastPrice;
-  }
-
-  function updatePrice(int256 _price) external override onlyFeed {
-    if (!_feedInitialized) {
-      _feedInitialized = true;
-    }
-    lastPrice = _price;
-  }
-
   // gov setters
   modifier onlyGov() {
     require(governance == _msgSender(), "OVLFPosition: caller is not governance");
@@ -302,6 +283,6 @@ contract OVLFPosition is ERC1155, IOVLPosition {
   }
 
   function setFeed(address _feed) public onlyGov {
-    feed = _feed;
+    feed = IOVLFeed(_feed);
   }
 }
