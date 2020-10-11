@@ -22,13 +22,15 @@ contract OVLFPosition is ERC1155, IOVLPosition {
   using SignedSafeMath for int256;
   using EnumerableSet for EnumerableSet.UintSet;
 
-  OVLToken public token;
+  OVLToken public immutable token;
   IOVLFeed public feed;
 
   uint256 public constant BASE = 1e18;
   uint256 public constant MIN_LEVERAGE = 1e17;
   uint256 public constant FEE_BURN = 50 * 1e16;
   uint256 public constant LIQUIDATE_REWARD = 50 * 1e16;
+
+  // TODO: decimals ..
 
   uint256 public maxLeverage = BASE.mul(100);
   uint256 public tradeFee = BASE.mul(15).div(10000);
@@ -67,8 +69,10 @@ contract OVLFPosition is ERC1155, IOVLPosition {
 
     // Enter position with corresponding NFT receipt. 1:1 bw share of position (balance) and OVL locked for FPosition
     uint256 id = _enterPosition(_amount, _long, _leverage);
-    _mint(_msgSender(), id, _amount, abi.encodePacked(uint8(0x0)));
+    _mint(_msgSender(), id, _amount, "0x0");
     _transferFeesToTreasury(fees);
+
+    // TODO: add an event here for built position with ID, etc (similar event in unlock too)
   }
 
   function buildAll(bool _long, uint256 _leverage) public virtual override {
@@ -130,7 +134,7 @@ contract OVLFPosition is ERC1155, IOVLPosition {
   }
 
   // liquidatable() lists underwater positions
-  function liquidatable() public virtual override returns (uint256[] memory) {
+  function liquidatable() public view virtual override returns (uint256[] memory) {
     int256 price = feed.getData();
     uint256[] memory liqs = new uint256[](_open.length()); // TODO: len > liqs.length, which produces empty zero values at the end of ret array. Is this a problem ever with keccak() ids and an edge case?
     for (uint256 i=0; i < _open.length(); i++) {
@@ -220,6 +224,7 @@ contract OVLFPosition is ERC1155, IOVLPosition {
   }
 
   function _positionOf(uint256 _id) private view returns (FPosition memory) {
+    require(_positionExists(_id), "OVLFPosition: position must exist"); // TODO: change this so doesn't revert but fix fns below?
     return _positions[_id];
   }
 
@@ -251,7 +256,7 @@ contract OVLFPosition is ERC1155, IOVLPosition {
     return _calcLiquidationPrice(pos);
   }
 
-  function openPositions() public view returns (uint256[] memory) {
+  function open() public view returns (uint256[] memory) {
     uint256[] memory ps = new uint256[](_open.length());
     for (uint256 i=0; i < _open.length(); i++) {
       uint256 id = _open.at(i);

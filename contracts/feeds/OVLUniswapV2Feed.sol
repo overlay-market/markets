@@ -5,9 +5,15 @@ pragma solidity ^0.6.0;
 import "../../interfaces/overlay/IOVLFeed.sol";
 
 contract OVLUniswapV2Feed is IOVLFeed {
+  int256 public price;
 
-  function getLatestPrice() public virtual override returns (uint256) {
+  // WARNING: This is only for dummy testing right now. TODO: Implement!
+  function getData() public view virtual override returns (int256) {
+    return price;
+  }
 
+  function setData(int256 _price) public {
+    price = _price;
   }
 
 }

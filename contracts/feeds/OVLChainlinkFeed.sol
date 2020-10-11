@@ -10,8 +10,8 @@ import "../../interfaces/overlay/IOVLFeed.sol";
 import "../../interfaces/overlay/IOVLPosition.sol";
 
 contract OVLChainlinkFeed is Context, IOVLFeed {
-  AggregatorV3Interface internal _chainlink;
-  address public dataSource;
+  AggregatorV3Interface internal immutable _chainlink;
+  address public immutable dataSource;
 
   constructor(address _data) public {
     _chainlink = AggregatorV3Interface(_data);
