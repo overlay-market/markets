@@ -148,7 +148,7 @@ contract OVLFPosition is ERC1155, IOVLPosition {
 
   function _enterPosition(uint256 _amount, bool _long, uint256 _leverage) private returns (uint256) {
     int256 price = feed.getData();
-    uint256 id = _getId(_long, _leverage, price);
+    uint256 id = getId(_long, _leverage, price);
 
     if (!_positionExists(id)) {
       _positions[id] = FPosition(_long, _leverage, price);
@@ -219,10 +219,6 @@ contract OVLFPosition is ERC1155, IOVLPosition {
   }
 
   // pos attr views
-  function _getId(bool _long, uint256 _leverage, int256 _price) private pure returns (uint256) {
-    return uint256(keccak256(abi.encodePacked(_long, _leverage, _price))); // TODO: Check this is safe
-  }
-
   function _positionOf(uint256 _id) private view returns (FPosition memory) {
     require(_positionExists(_id), "OVLFPosition: position must exist"); // TODO: change this so doesn't revert but fix fns below?
     return _positions[_id];
@@ -230,6 +226,10 @@ contract OVLFPosition is ERC1155, IOVLPosition {
 
   function _positionExists(uint256 _id) private view returns (bool) {
     return _open.contains(_id);
+  }
+
+  function getId(bool _long, uint256 _leverage, int256 _price) public pure returns (uint256) {
+    return uint256(keccak256(abi.encodePacked(_long, _leverage, _price))); // TODO: Check this is safe
   }
 
   function amountLockedIn(uint256 _id) public view returns (uint256) {
