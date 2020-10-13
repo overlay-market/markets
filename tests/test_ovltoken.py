@@ -6,7 +6,7 @@ BASE = 1e18
 
 @pytest.fixture
 def token():
-    token = OVLToken.deploy("Overlay Test Token", "OVL", {
+    token = OVLToken.deploy("Overlay", "OVL", {
         'from': accounts[0],
     })
     token.grantRole(token.MINTER_ROLE(), accounts[1].address, {

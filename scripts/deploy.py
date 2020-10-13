@@ -18,7 +18,7 @@ def main():
     acct = accounts.load('test_1') # TODO: ovl_deployer
 
     # TODO: fix gas price issues with kovan deployment
-    token = OVLToken.deploy("Overlay Test Token", "OVL", {
+    token = OVLToken.deploy("Overlay", "OVL", {
         'from': acct,
     })
     token.grantRole(token.MINTER_ROLE(), acct.address, {'from': acct})

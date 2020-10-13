@@ -6,7 +6,7 @@ from brownie import OVLToken, OVLFPosition, OVLTestFeed, accounts
 @pytest.fixture
 def deployment():
     gov = accounts[0]
-    token = OVLToken.deploy("Overlay Test Token", "OVL", { 'from': gov })
+    token = OVLToken.deploy("Overlay", "OVL", { 'from': gov })
     token.grantRole(token.MINTER_ROLE(), gov.address, { 'from': gov })
     token.mint(1000*1e18, {'from': gov})
     token.transfer(accounts[1], 1000*1e18, {'from': gov})
@@ -58,6 +58,8 @@ def test_build(deployment):
     assert pos.leverageOf(id_2) == 5e18
     assert pos.balanceOf(acc.address, id_2) == pos.amountLockedIn(id_2) == tx_2.events['Build']['value'] == 50*1e18 * (1 - 0.0015*5.0)
     assert pos.liquidationPriceOf(id_2) == 375*1e8 * (1 - 1/5.0) # liquidate = lockPrice * (1-1/leverage)
+
+    # TODO: short position, 1x, 2.5x
 
 
 def test_unwind(deployment):

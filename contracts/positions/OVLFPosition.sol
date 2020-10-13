@@ -22,7 +22,7 @@ contract OVLFPosition is ERC1155, IOVLPosition {
   using SignedSafeMath for int256;
   using EnumerableSet for EnumerableSet.UintSet;
 
-  OVLToken public immutable token;
+  OVLToken public token;
   IOVLFeed public feed;
 
   uint256 public constant BASE = 1e18;
@@ -69,7 +69,7 @@ contract OVLFPosition is ERC1155, IOVLPosition {
 
     // Enter position with corresponding receipt. 1:1 bw share of position (balance) and OVL locked for FPosition
     uint256 id = _enterPosition(_amount, _long, _leverage);
-    _mint(_msgSender(), id, _amount, "0x0");
+    _mint(_msgSender(), id, _amount, "");
     _transferFeesToTreasury(fees);
     emit Build(_msgSender(), id, _amount);
   }
