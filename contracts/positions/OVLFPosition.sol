@@ -147,6 +147,15 @@ contract OVLFPosition is ERC1155, IOVLPosition {
     return liqs;
   }
 
+  function open() public view returns (uint256[] memory) {
+    uint256[] memory ps = new uint256[](_open.length());
+    for (uint256 i=0; i < _open.length(); i++) {
+      uint256 id = _open.at(i);
+      ps[i] = id;
+    }
+    return ps;
+  }
+
   function _enterPosition(uint256 _amount, bool _long, uint256 _leverage) private returns (uint256) {
     int256 price = feed.getData();
     uint256 id = getId(_long, _leverage, price);
@@ -229,8 +238,9 @@ contract OVLFPosition is ERC1155, IOVLPosition {
     return _open.contains(_id);
   }
 
+  // TODO: Check this is safe and unique
   function getId(bool _long, uint256 _leverage, int256 _price) public pure returns (uint256) {
-    return uint256(keccak256(abi.encodePacked(_long, _leverage, _price))); // TODO: Check this is safe
+    return uint256(keccak256(abi.encodePacked(_long, _leverage, _price)));
   }
 
   function amountLockedIn(uint256 _id) public view returns (uint256) {
@@ -255,15 +265,6 @@ contract OVLFPosition is ERC1155, IOVLPosition {
   function liquidationPriceOf(uint256 _id) public view returns (int256) {
     FPosition memory pos = _positionOf(_id);
     return _calcLiquidationPrice(pos);
-  }
-
-  function open() public view returns (uint256[] memory) {
-    uint256[] memory ps = new uint256[](_open.length());
-    for (uint256 i=0; i < _open.length(); i++) {
-      uint256 id = _open.at(i);
-      ps[i] = id;
-    }
-    return ps;
   }
 
   // gov setters
