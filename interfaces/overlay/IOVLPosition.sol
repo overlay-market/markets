@@ -16,4 +16,9 @@ interface IOVLPosition {
 
   function liquidatable() external view returns (uint256[] memory);
 
+  event Build(address indexed by, uint256 indexed id, uint256 value);
+
+  event Unwind(address indexed by, uint256 indexed id, uint256 value);
+
+  event Liquidate(address indexed by, uint256 indexed id, uint256 value);
 }

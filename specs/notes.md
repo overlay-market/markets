@@ -10,7 +10,7 @@
 
 ### OVL Position (ERC1155)
 
-- NFT representing a trader's position,  received upon locking up OVL in a trade on a data stream
+- Token representing a trader's position,  received upon locking up OVL in a trade on a data stream
 
 - Unique identifiers are attrs of the position: Lock price, data feed name, long/short side, leverage
 
@@ -30,7 +30,7 @@
 
 - **OVLToken (ERC20 Token):** Base token with public `mint()`, `burn()` functions through `AccessControl` privileges
 
-- **OVLPosition (ERC1155 Token):** Positions are NFTs. Allows for transfer of positions on secondary markets
+- **OVLPosition (ERC1155 Token):** Positions as ERC1155 tokens allows for transfers on secondary markets
 
 - Position contracts have admin access to OVL token contract for mint/burn functions
 
@@ -50,7 +50,7 @@ interface OVLToken {
 
 }
 
-// Position ERC1155 NFT token
+// Position ERC1155 token
 interface OVLPosition {
 
     IERC20 public token;

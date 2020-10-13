@@ -26,13 +26,13 @@ contract OVLFPosition is ERC1155, IOVLPosition {
   IOVLFeed public feed;
 
   uint256 public constant BASE = 1e18;
-  uint256 public constant MIN_LEVERAGE = 1e17;
+  uint256 public constant MIN_LEVERAGE = 1e18;
   uint256 public constant FEE_BURN = 50 * 1e16;
   uint256 public constant LIQUIDATE_REWARD = 50 * 1e16;
 
   // TODO: decimals ..
 
-  uint256 public maxLeverage = BASE.mul(100);
+  uint256 public maxLeverage = BASE.mul(10);
   uint256 public tradeFee = BASE.mul(15).div(10000);
 
   address public governance;
@@ -67,12 +67,11 @@ contract OVLFPosition is ERC1155, IOVLPosition {
     token.safeTransferFrom(_msgSender(), address(this), _amount);
     _amount = _amount.sub(fees);
 
-    // Enter position with corresponding NFT receipt. 1:1 bw share of position (balance) and OVL locked for FPosition
+    // Enter position with corresponding receipt. 1:1 bw share of position (balance) and OVL locked for FPosition
     uint256 id = _enterPosition(_amount, _long, _leverage);
     _mint(_msgSender(), id, _amount, "0x0");
     _transferFeesToTreasury(fees);
-
-    // TODO: add an event here for built position with ID, etc (similar event in unlock too)
+    emit Build(_msgSender(), id, _amount);
   }
 
   function buildAll(bool _long, uint256 _leverage) public virtual override {
@@ -108,6 +107,7 @@ contract OVLFPosition is ERC1155, IOVLPosition {
       token.safeTransfer(_msgSender(), _amount);
       _transferFeesToTreasury(fees);
     }
+    emit Unwind(_msgSender(), _id, _amount);
   }
 
   // uwindAll() unlocks entire position
@@ -131,6 +131,7 @@ contract OVLFPosition is ERC1155, IOVLPosition {
     amount = amount.sub(reward);
     token.safeTransfer(_msgSender(), reward);
     _transferFeesToTreasury(amount);
+    emit Liquidate(_msgSender(), _id, reward);
   }
 
   // liquidatable() lists underwater positions
