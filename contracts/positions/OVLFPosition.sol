@@ -61,10 +61,9 @@ contract OVLFPosition is ERC1155, IOVLPosition {
     require(_amount > 0, "OVLFPosition: must build position with amount greater than zero");
     require(_leverage >= MIN_LEVERAGE, "OVLFPosition: must build position with leverage greater than min allowed");
     require(_leverage <= maxLeverage, "OVLFPosition: must build position with leverage less than max allowed");
-    uint256 fees = _calcFeeAmount(_amount, _leverage);
-    require(_amount > fees, "OVLFPosition: must build position with amount larger than fees");
 
     token.safeTransferFrom(_msgSender(), address(this), _amount);
+    uint256 fees = _calcFeeAmount(_amount, _leverage);
     _amount = _amount.sub(fees);
 
     // Enter position with corresponding receipt. 1:1 bw share of position (balance) and OVL locked for FPosition
@@ -84,6 +83,7 @@ contract OVLFPosition is ERC1155, IOVLPosition {
     // 1:1 bw share of position (balance) and OVL locked for FPosition
     require(_amount > 0, "OVLFPosition: must unwind position with amount greater than zero");
     require(_amount <= amountLockedIn(_id), "OVLFPosition: not enough locked in pool to unwind amount");
+
     _burn(_msgSender(), _id, _amount);
     int256 profit = _exitPosition(_id, _amount);
 
@@ -98,8 +98,8 @@ contract OVLFPosition is ERC1155, IOVLPosition {
       _amount = _amount.sub(burnAmount);
     }
 
-    FPosition memory pos = _positionOf(_id);
-    uint256 fees = _calcFeeAmount(_amount, pos.leverage);
+    uint256 leverage = leverageOf(_id);
+    uint256 fees = _calcFeeAmount(_amount, leverage);
     _amount = _amount.sub(fees);
 
     // Send principal + profit back to trader and fees to treasury
@@ -123,14 +123,19 @@ contract OVLFPosition is ERC1155, IOVLPosition {
     require(_canLiquidate(_id, price), "OVLFPosition: position must be underwater");
 
     uint256 amount = amountLockedIn(_id);
+    uint256 leverage = leverageOf(_id);
+    uint256 fees = _calcFeeAmount(amount, leverage);
+    amount = amount.sub(fees);
+
     _amounts[_id] = 0;
     _open.remove(_id);
 
     // send fees to treasury and transfer rest to liquidater
     uint256 reward = amount.mul(LIQUIDATE_REWARD).div(BASE);
     amount = amount.sub(reward);
+    token.burn(amount);
     token.safeTransfer(_msgSender(), reward);
-    _transferFeesToTreasury(amount);
+    _transferFeesToTreasury(fees);
     emit Liquidate(_msgSender(), _id, reward);
   }
 
@@ -217,7 +222,7 @@ contract OVLFPosition is ERC1155, IOVLPosition {
   }
 
   function _calcFeeAmount(uint256 _amount, uint256 _leverage) internal view returns (uint256) {
-    return _amount.mul(_leverage).mul(tradeFee).div(BASE).div(BASE);
+    return Math.min(_amount.mul(_leverage).mul(tradeFee).div(BASE).div(BASE), _amount);
   }
 
   function _transferFeesToTreasury(uint256 fees) private {
