@@ -68,3 +68,6 @@ def test_unwind(deployment):
 
 def test_liquidate(deployment):
     pass
+
+
+# TODO: test edge cases, including: max payout, ...

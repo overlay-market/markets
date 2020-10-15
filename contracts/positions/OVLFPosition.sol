@@ -34,6 +34,7 @@ contract OVLFPosition is ERC1155, IOVLPosition {
 
   uint256 public maxLeverage = BASE.mul(10);
   uint256 public tradeFee = BASE.mul(15).div(10000);
+  uint256 public maxPayout = BASE.mul(1).div(100); // per trade, % of token.totalSupply
 
   address public governance;
   address public treasury;
@@ -188,13 +189,23 @@ contract OVLFPosition is ERC1155, IOVLPosition {
     return profit;
   }
 
+  function calcMaxProfit() public view returns (int256) {
+    return int256(token.totalSupply()).mul(int256(maxPayout)).div(int256(BASE));
+  }
+
   function _calcProfit(uint256 _id, uint256 _amount, int256 _price) internal view returns (int256) {
     // pnl = (exit - entry)/entry * side * leverage * amount
     FPosition memory pos = _positionOf(_id);
     int256 side = pos.long ? int256(1) : int256(-1);
     int256 size = int256(_amount).mul(int256(pos.leverage));
     int256 ratio = _price.sub(pos.lockPrice).mul(int256(BASE)).div(pos.lockPrice);
-    return size.mul(side).mul(ratio).div(int256(BASE)).div(int256(BASE)); // TODO: Check for any rounding errors
+
+    int256 maxProfit = int256(token.totalSupply()).mul(int256(maxPayout)).div(int256(BASE)); // TODO: Check for any rounding errors
+    int256 profit = size.mul(side).mul(ratio).div(int256(BASE)).div(int256(BASE)); // TODO: Check for any rounding errors
+    if (profit > maxProfit) {
+      profit = maxProfit;
+    }
+    return profit;
   }
 
   function _calcLiquidationPrice(FPosition memory pos) private pure returns (int256) {
@@ -284,6 +295,10 @@ contract OVLFPosition is ERC1155, IOVLPosition {
 
   function setTradeFee(uint256 _fee) external onlyGov {
     tradeFee = _fee;
+  }
+
+  function setMaxPayout(uint256 _payout) external onlyGov {
+    maxPayout = _payout;
   }
 
   function setGovernance(address _gov) public onlyGov {

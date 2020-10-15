@@ -19,7 +19,7 @@ contract OVLChainlinkFeed is Context, IOVLFeed {
   }
 
   function getData() public view virtual override returns (int256) {
-    // TODO: twap implementation? how often does timestamp == 0 happen? => if often, need to think of storing a lastPrice var to ref
+    // NOTE: 1h data for BTCUSD, 20m data for ETHUSD, 1h data for Fast gas
     (, int256 price, , uint256 timestamp, ) = _chainlink.latestRoundData();
     require(timestamp > 0, "OVLChainlinkFeed: round not complete");
     return price;
