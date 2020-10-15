@@ -1,5 +1,13 @@
 # Implementation Notes for OVL
 
+### Protocol
+
+The Overlay protocol offers users the ability to trade nearly any scalar, non-manipulable and unpredictable data stream. It recreates the dynamics of trading, but without the need for counterparties. It therefore completely solves the liquidity problems that occur in prediction markets (i.e. markets are so niche there is nobody trading), replacing them with an inflation problem.
+
+The Overlay mechanism is simple: traders enter positions by locking up OVL tokens in long or short positions on various data streams offered by the protocol. Data streams are obtained via reliable oracles. When a trader exits that same position, the protocol dynamically mints/burns OVL based off of their net profit/loss for the trade. The contract then credits/removes OVL tokens from the trader's balance and adds/subtracts from the total existing supply of OVL.
+
+Protocol revenues come from trading fees charged in OVL on each trade. Fees are sent to a community-governed treasury, with incentives for secondary market liquidity providers. This secondary market incentive creates a feedback loop to offer a reliable price feed for OVLETH on the Overlay trading platform, that traders can then use to hedge out OVL risk.
+
 ### OVL Token (ERC20)
 
 1. Allows holders to participate in long/short trading of data streams
@@ -109,18 +117,3 @@ Three phases for initial token distribution (~ 10% to alpha testers, ~ 90% to yi
 8. Expiries?
 
 **(1, 2, 3) are good proof of concept (POC) for the hack. Include 4, maybe.**
-
-
-#### Questions
-
-1. How to deploy new OVLPosition => OVLFeed combos? ... Look to yearn controller/deployer []
-
-2. How to implement governance for deployment? []
-
-3. Where’s the treasury and fees in spec diagram? [x]
-
-4. What does the oracle feed interface look like? []
-
-5. How to make oracle feed interface so general that can accommodate Uniswap and Chainlink []
-
-6. Sell in fixed time increments to save on gas (pool gas fees until make trade)? Or every time user exits position, hit Uniswap and charge user (likely costly and slow)? []
