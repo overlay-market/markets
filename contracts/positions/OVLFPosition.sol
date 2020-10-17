@@ -25,16 +25,15 @@ contract OVLFPosition is ERC1155, IOVLPosition {
   OVLToken public token;
   IOVLFeed public feed;
 
-  uint256 public constant BASE = 1e18;
+  uint256 private constant BASE = 1e18;
   uint256 public constant MIN_LEVERAGE = 1e18;
-  uint256 public constant FEE_BURN = 50 * 1e16;
-  uint256 public constant LIQUIDATE_REWARD = 50 * 1e16;
 
-  // TODO: decimals ..
+  uint8 public decimals = 18;
 
   uint256 public maxLeverage = BASE.mul(10);
   uint256 public tradeFee = BASE.mul(15).div(10000);
-  uint256 public maxPayout = BASE.mul(1).div(100); // per trade, % of token.totalSupply
+  uint256 public feeBurn = BASE.mul(50).div(100);
+  uint256 public liquidateReward = BASE.mul(50).div(100);
 
   address public governance;
   address public treasury;
@@ -120,7 +119,7 @@ contract OVLFPosition is ERC1155, IOVLPosition {
   // liquidate() burns underwater positions
   function liquidate(uint256 _id) public virtual override {
     require(_positionExists(_id), "OVLFPosition: position must exist");
-    int256 price = feed.getData();
+    int256 price = _getPrice();
     require(_canLiquidate(_id, price), "OVLFPosition: position must be underwater");
 
     uint256 amount = amountLockedIn(_id);
@@ -132,7 +131,7 @@ contract OVLFPosition is ERC1155, IOVLPosition {
     _open.remove(_id);
 
     // send fees to treasury and transfer rest to liquidater
-    uint256 reward = amount.mul(LIQUIDATE_REWARD).div(BASE);
+    uint256 reward = amount.mul(liquidateReward).div(BASE);
     amount = amount.sub(reward);
     token.burn(amount);
     token.safeTransfer(_msgSender(), reward);
@@ -142,7 +141,7 @@ contract OVLFPosition is ERC1155, IOVLPosition {
 
   // liquidatable() lists underwater positions
   function liquidatable() public view virtual override returns (uint256[] memory) {
-    int256 price = feed.getData();
+    int256 price = _getPrice();
     uint256[] memory liqs = new uint256[](_open.length()); // TODO: len > liqs.length, which produces empty zero values at the end of ret array. Is this a problem ever with keccak() ids and an edge case?
     for (uint256 i=0; i < _open.length(); i++) {
       uint256 id = _open.at(i);
@@ -163,7 +162,7 @@ contract OVLFPosition is ERC1155, IOVLPosition {
   }
 
   function _enterPosition(uint256 _amount, bool _long, uint256 _leverage) private returns (uint256) {
-    int256 price = feed.getData();
+    int256 price = _getPrice();
     uint256 id = getId(_long, _leverage, price);
 
     if (!_positionExists(id)) {
@@ -179,7 +178,7 @@ contract OVLFPosition is ERC1155, IOVLPosition {
   }
 
   function _exitPosition(uint256 _id, uint256 _amount) private returns (int256) {
-    int256 price = feed.getData();
+    int256 price = _getPrice();
     int256 profit = _calcProfit(_id, _amount, price);
 
     // update total locked amount
@@ -189,8 +188,9 @@ contract OVLFPosition is ERC1155, IOVLPosition {
     return profit;
   }
 
-  function calcMaxProfit() public view returns (int256) {
-    return int256(token.totalSupply()).mul(int256(maxPayout)).div(int256(BASE));
+  function _getPrice() private view returns (int256) {
+    (int256 price, ) = feed.getData();
+    return price;
   }
 
   function _calcProfit(uint256 _id, uint256 _amount, int256 _price) internal view returns (int256) {
@@ -199,13 +199,7 @@ contract OVLFPosition is ERC1155, IOVLPosition {
     int256 side = pos.long ? int256(1) : int256(-1);
     int256 size = int256(_amount).mul(int256(pos.leverage));
     int256 ratio = _price.sub(pos.lockPrice).mul(int256(BASE)).div(pos.lockPrice);
-
-    int256 maxProfit = int256(token.totalSupply()).mul(int256(maxPayout)).div(int256(BASE)); // TODO: Check for any rounding errors
-    int256 profit = size.mul(side).mul(ratio).div(int256(BASE)).div(int256(BASE)); // TODO: Check for any rounding errors
-    if (profit > maxProfit) {
-      profit = maxProfit;
-    }
-    return profit;
+    return size.mul(side).mul(ratio).div(int256(BASE)).div(int256(BASE)); // TODO: Check for any rounding errors
   }
 
   function _calcLiquidationPrice(FPosition memory pos) private pure returns (int256) {
@@ -237,7 +231,7 @@ contract OVLFPosition is ERC1155, IOVLPosition {
   }
 
   function _transferFeesToTreasury(uint256 fees) private {
-    uint256 burnAmount = fees.mul(FEE_BURN).div(BASE);
+    uint256 burnAmount = fees.mul(feeBurn).div(BASE);
     token.burn(burnAmount);
 
     fees = fees.sub(burnAmount);
@@ -297,8 +291,12 @@ contract OVLFPosition is ERC1155, IOVLPosition {
     tradeFee = _fee;
   }
 
-  function setMaxPayout(uint256 _payout) external onlyGov {
-    maxPayout = _payout;
+  function setFeeBurn(uint256 _burn) external onlyGov {
+    feeBurn = _burn;
+  }
+
+  function setLiquidateReward(uint256 _reward) external onlyGov {
+    liquidateReward = _reward;
   }
 
   function setGovernance(address _gov) public onlyGov {

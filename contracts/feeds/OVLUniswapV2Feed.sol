@@ -9,7 +9,7 @@ contract OVLUniswapV2Feed is IOVLFeed {
   uint public period;
 
   // TODO: Implement!
-  function getData() public view virtual override returns (int256) {
+  function getData() public view virtual override returns (int256, uint256) {
   }
 
 }
