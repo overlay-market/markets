@@ -18,23 +18,15 @@ Protocol revenues come from trading fees charged in OVL on each trade. Fees are 
 
 ### OVL Position (ERC1155)
 
-- Token representing a trader's position,  received upon locking up OVL in a trade on a data stream
+- Represents a trader's position, received upon locking up OVL in a trade on a data stream
 
 - Unique identifiers are attrs of the position: Lock price, data feed name, long/short side, leverage
 
 - Tradeable/transferrable on secondary markets given ERC1155 standard
 
-### Hackathon (v0)
+### Spec
 
-- Only focus on BTC and ETH streams (the UNI incentivized pools) Uniswap pools for WBTCETH ($488M in liquidity) and ETHUSDT ($396M in liquidity), as well as associated Chainlink BTCUSD, ETHUSD, High Gas feeds.
-
-- Have OVLv0 as fixed amount distributed via first come first serve for alpha testers
-
-**v1** will be yield farming for rest of the token distribution (90%).
-
-#### Spec
-
-- Emphasis on modularity. Feed and trading position contracts act as their own modular capsule. Governance adds these in pairs.
+- Feed and trading position contracts act as pairs. Governance adds these together.
 
 - **OVLToken (ERC20 Token):** Base token with public `mint()`, `burn()` functions through `AccessControl` privileges
 
@@ -104,7 +96,6 @@ Three phases for initial token distribution (~ 10% to alpha testers, ~ 90% to yi
 2. Beta yield farming of $OVL with other Uniswap token pools: $SNXETH, $AAVEETH, $WBTCETH, etc.
 3. Beta yield farming of more $OVL with seeded Uniswap $OVL/$ETH LP tokens
 
-
 ### Roadmap
 
 1. Long/Short w corresponding tokens on launch (ETH x DeFi token pools & feeds)
@@ -114,6 +105,4 @@ Three phases for initial token distribution (~ 10% to alpha testers, ~ 90% to yi
 5. More feeds
 6. New stablecoin based off composition of derivs
 7. Lending of Locked OVL positions (likely through Aave)
-8. Expiries?
-
-**(1, 2, 3) are good proof of concept (POC) for the hack. Include 4, maybe.**
+8. Expiries

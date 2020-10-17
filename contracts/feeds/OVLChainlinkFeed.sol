@@ -24,14 +24,14 @@ contract OVLChainlinkFeed is Context, IOVLFeed {
     rounds = _rounds;
   }
 
-  function getData() public view virtual override returns (int256, uint256) {
+  function getData() public virtual override returns (int256, uint256) {
     // NOTE: 1h data for BTCUSD, 20m data for ETHUSD, 1h data for Fast gas
     (uint80 roundId, int256 price, , uint256 timestamp, ) = _chainlink.latestRoundData();
     require(timestamp > 0, "OVLChainlinkFeed: round not complete");
 
     // Get the TWAP over rounds
     uint256 period = 0;
-    int256 cumPrice = 0;
+    int256 priceCumulative = 0;
     for (uint256 i=0; i < rounds; i++) {
       if (roundId == 0) {
         break;
@@ -40,7 +40,7 @@ contract OVLChainlinkFeed is Context, IOVLFeed {
       (, int256 prevRoundPrice, , uint256 prevRoundTimestamp, ) = _chainlink.getRoundData(roundId);
 
       uint256 delt = timestamp.sub(prevRoundTimestamp);
-      cumPrice = cumPrice.add(price.mul(int256(delt)));
+      priceCumulative = priceCumulative.add(price.mul(int256(delt)));
       period = period.add(delt);
 
       timestamp = prevRoundTimestamp;
@@ -48,7 +48,7 @@ contract OVLChainlinkFeed is Context, IOVLFeed {
     }
 
     if (period != 0) {
-      price = cumPrice.div(int256(period));
+      price = priceCumulative.div(int256(period));
     }
     return (price, period);
   }

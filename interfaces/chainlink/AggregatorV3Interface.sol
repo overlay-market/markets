@@ -2,6 +2,8 @@
 
 pragma solidity >=0.6.0;
 
+// based on code from https://github.com/smartcontractkit/chainlink
+
 interface AggregatorV3Interface {
 
   function getRoundData(uint80 _roundId)
@@ -25,5 +27,5 @@ interface AggregatorV3Interface {
       uint256 updatedAt,
       uint80 answeredInRound
     );
-    
+
 }

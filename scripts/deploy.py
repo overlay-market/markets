@@ -40,7 +40,8 @@ def main():
     # Deploy Chainlink BTCUSD feed && associated FPosition
     print("Chainlink addr: {}".format(chainlink_addrs['BTCUSD'][network]))
     feed_btcusd_chainlink = OVLChainlinkFeed.deploy(
-        chainlink_addrs['BTCUSD'][network], # Kovan feed; TODO: debug issues with Kovan deploy
+        chainlink_addrs['BTCUSD'][network],
+        8, # 8 hour TWAP since BTCUSD gives data every 1h
         {'from': acct}
     )
     print("Feed data source: {}".format(feed_btcusd_chainlink.dataSource()))

@@ -140,7 +140,7 @@ contract OVLFPosition is ERC1155, IOVLPosition {
   }
 
   // liquidatable() lists underwater positions
-  function liquidatable() public view virtual override returns (uint256[] memory) {
+  function liquidatable() public virtual override returns (uint256[] memory) {
     int256 price = _getPrice();
     uint256[] memory liqs = new uint256[](_open.length()); // TODO: len > liqs.length, which produces empty zero values at the end of ret array. Is this a problem ever with keccak() ids and an edge case?
     for (uint256 i=0; i < _open.length(); i++) {
@@ -188,7 +188,7 @@ contract OVLFPosition is ERC1155, IOVLPosition {
     return profit;
   }
 
-  function _getPrice() private view returns (int256) {
+  function _getPrice() private returns (int256) {
     (int256 price, ) = feed.getData();
     return price;
   }

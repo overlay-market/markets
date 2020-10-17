@@ -8,7 +8,7 @@ contract OVLTestFeed is IOVLFeed {
   int256 public price;
 
   // WARNING: This is only for dummy testing
-  function getData() public view virtual override returns (int256, uint256) {
+  function getData() public virtual override returns (int256, uint256) {
     return (price, 0);
   }
 
