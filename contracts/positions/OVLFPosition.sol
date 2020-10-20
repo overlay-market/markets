@@ -189,7 +189,7 @@ contract OVLFPosition is ERC1155, IOVLPosition {
   }
 
   function _getPrice() private returns (int256) {
-    (int256 price, ) = feed.getData();
+    (int256 price, ) = feed.fetchData();
     return price;
   }
 

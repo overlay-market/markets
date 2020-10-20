@@ -91,10 +91,10 @@ Eventually lend out the locked OVL from positions for capital efficiency and add
 
 ### Token Distribution
 
-Three phases for initial token distribution (~ 10% to alpha testers, ~ 90% to yield farmers):
+Three phases for initial token distribution (~ 10% to alpha testers, ~ 90% to liquidity mining):
 1. Token claim for alpha testers of trading mechanism (~ 10%)
-2. Beta yield farming of $OVL with other Uniswap token pools: $SNXETH, $AAVEETH, $WBTCETH, etc.
-3. Beta yield farming of more $OVL with seeded Uniswap $OVL/$ETH LP tokens
+2. Beta liquidity mining of OVL with other Uniswap token pools
+3. Beta liquidity mining of more OVL with seeded Uniswap OVLETH LP tokens
 
 ### Roadmap
 

@@ -72,13 +72,17 @@ contract OVLUniswapV2Feed is IOVLFeed {
       }
   }
 
-  function getData() public virtual override returns (int256, uint256) {
+  function data() external view returns (int256, uint256) {
+    return (int256(price0Average.decode()), periodLast);
+  }
+
+  function fetchData() public virtual override returns (int256, uint256) {
     // returns (price, period) where price = price0Average (price of token A in terms of token B)
     uint32 blockTimestamp = UniswapV2OracleLibrary.currentBlockTimestamp();
     uint32 timeElapsed = blockTimestamp - blockTimestampLast;
     if (timeElapsed >= periodMin) {
       update();
     }
-    return (int256(price0Average.decode()), periodLast);
+    return (int256(price0Average.decode()), periodLast); // TODO: check price0avg decoded is what we want ...
   }
 }
