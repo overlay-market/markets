@@ -26,15 +26,19 @@ Protocol revenues come from trading fees charged in OVL on each trade. Fees are 
 
 ### Spec
 
-- Feed and trading position contracts act as pairs. Governance adds these together.
-
 - **OVLToken (ERC20 Token):** Base token with public `mint()`, `burn()` functions through `AccessControl` privileges
 
 - **OVLPosition (ERC1155 Token):** Positions as ERC1155 tokens allows for transfers on secondary markets
 
+- **OVLFeed:** Proxy for the underlying data stream for prices
+
+- Feed and trading position contracts act as pairs. Governance adds these together.
+
 - Position contracts have admin access to OVL token contract for mint/burn functions
 
 - Position contracts fetch prices from associated feed contract whenever updates to the position occur
+
+- Keepers (i.e. any external actor) are incentivized to liquidate underwater positions through a reward of 50% (less fees) of the total OVL locked in the underwater position
 
 
 ![spec](OVL.svg)
