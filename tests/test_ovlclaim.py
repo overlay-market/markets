@@ -32,3 +32,6 @@ def test_withdraw(deployment):
     with pytest.raises(exceptions.VirtualMachineError):
         tx_rev_2 = claim.withdraw({'from': accounts[3]})
         assert tx_rev.revert_msg == "OVLClaim: no more funds to withdraw"
+
+    has = claim.hasClaimed(accounts[2].address)
+    assert has == True

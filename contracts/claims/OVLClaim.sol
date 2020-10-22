@@ -32,4 +32,8 @@ contract OVLClaim is Context {
     token.safeTransfer(_msgSender(), amount);
     emit Withdraw(_msgSender(), amount);
   }
+
+  function hasClaimed(address _addr) external view returns (bool) {
+    return _hasClaimed[_addr];
+  }
 }
