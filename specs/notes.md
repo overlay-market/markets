@@ -105,15 +105,15 @@ Overlay itself will be an automated market maker taking either side of any trade
 
 ### Revenue Model
 
-Fees in OVL: 0.15% per trade, adjustable by governance on feed-by-feed basis
+Fees (in OVL): 0.15% per trade, adjustable by governance on feed-by-feed basis
 
 - 50% is burned
-- 50% is sold for ETH via Uniswap through treasury
+- 50% is sent to a community governed treasury with incentives for spot market OVLETH LPs, governance participants, and insurance fund providers
 
-To incentivize OVLETH liquidity providers and governance contributors in perpetuity, take the 50% of the ETH to treasury and divide evenly between
+To incentivize OVLETH liquidity providers, governance contributors, and insurance providers in perpetuity, the pass through revenues to the Overlay treasury are split
 
 - 33.33% to OVLETH LPs staking
 - 33.33% to governance OVL stakers that vote
 - 33.33% to ERC20 stakers in insurance fund
 
-The weighting factors for each actor and fee rates can be adjusted by governance. Eventually lend out the locked OVL from positions for capital efficiency and additional revenue.
+The weighting factors for each actor and fee rates can be adjusted by governance. Eventually the Overlay protocol will lend out the locked OVL from positions for capital efficiency and additional revenue.
