@@ -111,7 +111,9 @@ Fees in OVL: 0.15% per trade, adjustable by governance on feed-by-feed basis
 - 50% is sold for ETH via Uniswap through treasury
 
 To incentivize OVLETH liquidity providers and governance contributors in perpetuity, take the 50% of the ETH to treasury and divide evenly between
-- 50% (25% of total fees) to OVLETH LPs staking
-- 50% (25% of total fees) to governance $OVL stakers that vote
 
-Eventually lend out the locked OVL from positions for capital efficiency and additional revenue.
+- 33.33% to OVLETH LPs staking
+- 33.33% to governance OVL stakers that vote
+- 33.33% to ERC20 stakers in insurance fund
+
+The weighting factors for each actor and fee rates can be adjusted by governance. Eventually lend out the locked OVL from positions for capital efficiency and additional revenue.
