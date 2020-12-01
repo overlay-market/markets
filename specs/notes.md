@@ -2,7 +2,7 @@
 
 ### Protocol
 
-The Overlay protocol offers users the ability to trade nearly any scalar, non-manipulable and unpredictable data stream. It recreates the dynamics of trading, but without the need for counterparties. It therefore completely solves the liquidity problems that occur in prediction markets (i.e. markets are so niche there is nobody trading), replacing them with an inflation problem.
+The Overlay protocol offers users the ability to trade nearly any scalar, non-manipulable and unpredictable data stream. It recreates the dynamics of trading, but without the need for counterparties. It therefore completely solves the liquidity problems that occur in prediction markets (i.e. markets are so niche there is nobody trading), replacing them with an inflation problem. This inflation problem is addressed by the protocol’s monetary policy.
 
 The Overlay mechanism is simple: traders enter positions by locking up OVL tokens in long or short positions on various data streams offered by the protocol. Data streams are obtained via reliable oracles. When a trader exits that same position, the protocol dynamically mints/burns OVL based off of their net profit/loss for the trade. The contract then credits/removes OVL tokens from the trader's balance and adds/subtracts from the total existing supply of OVL.
 
@@ -38,7 +38,7 @@ Protocol revenues come from trading fees charged in OVL on each trade. Fees are 
 
 - Position contracts fetch prices from associated feed contract whenever updates to the position occur
 
-- Keepers (i.e. any external actor) are incentivized to liquidate underwater positions through a reward of 50% (less fees) of the total OVL locked in the underwater position
+- Keepers (i.e. any external actor) are incentivized to liquidate underwater positions through a reward of a portion (less fees) of the total OVL locked in the underwater position
 
 
 ![spec](OVL.svg)
@@ -80,9 +80,32 @@ interface OVLPosition {
 }
 ```
 
+### Monetary Policy
+
+Overlay's monetary policy relies on revenues from trading fees charged when a user of the protocol builds or unwinds a position on a data stream. A portion of these fees are burnt upon trade execution to help manage currency supply. The rest are sent to a community governed treasury. Overlay’s community governed treasury passes through these fees to incentivize spot market liquidity providers (LPs), governance participants, and insurance fund providers as compensation for each of their services.
+
+A high-level overview for each of the roles:
+
+- **Spot Market LPs:** enable traders to swap OVL for ETH to enter/exit the Overlay system. LPs stake their Uniswap OVLETH LP tokens to earn yield in OVL.
+
+- **Governance Participants:** determine the risk/reward parameters of and markets offered by the protocol to ensure the Overlay system remains useful over time. Governance participants stake OVL to earn yield in OVL.
+
+- **Insurance Fund Providers:** backstop the protocol by locking up collateral for a governance-determined set amount of time, with an auction-and-burn mechanism in the event of any unanticipated excessive increase in the currency supply. Insurance fund providers can stake ETH, DAI, YFI, etc. in the treasury contract to earn yield in OVL, with downside risk of collateral loss.
+
+
+### Currency Supply Stability Mechanisms
+
+Overlay itself will be an automated market maker taking either side of any trade on the platform. Thus, it needs to keep a balanced set of outstanding positions to make sure trading on the exchange ultimately results in a zero sum game for those backstopping the system (and keeps currency supply stable). The mechanisms to do this:
+
+- Overlay charges a fee on each trade on the exchange. 50% (tunable by governance) of those fees are burnt over time effectively causing a downward drift in the currency supply to mitigate any potential large gains from profitable traders all in the same position on a market.
+
+- Overlay will implement a funding rate on each sampling of the underlying oracle feed. The funding rate keeps the floating price offered on the Overlay exchange on each market close to the oracle reported value. This mechanism effectively encourages arbitrageurs to take the other side of the trade and balance the Overlay outstanding positions on a market.
+
+- We are currently simulating dynamic fees with agent based sims to see if they better encourage a balanced set of outstanding positions or if the funding rate is all we need. Sims will examine fees dependent on the difference in currency supply from initial supply and imbalance in open interest. You can follow along here if you like: [overlay-monetary](https://github.com/overlay-market/overlay-monetary)
+
 ### Revenue Model
 
-Fees (in $OVL): 0.15% per trade, adjustable by governance on feed-by-feed basis
+Fees in OVL: 0.15% per trade, adjustable by governance on feed-by-feed basis
 
 - 50% is burned
 - 50% is sold for ETH via Uniswap through treasury
@@ -92,21 +115,3 @@ To incentivize OVLETH liquidity providers and governance contributors in perpetu
 - 50% (25% of total fees) to governance $OVL stakers that vote
 
 Eventually lend out the locked OVL from positions for capital efficiency and additional revenue.
-
-### Token Distribution
-
-Three phases for initial token distribution (~ 10% to alpha testers, ~ 90% to liquidity mining):
-1. Token claim for alpha testers of trading mechanism (~ 10%)
-2. Beta liquidity mining of OVL with other Uniswap token pools
-3. Beta liquidity mining of more OVL with seeded Uniswap OVLETH LP tokens
-
-### Roadmap
-
-1. Long/Short w corresponding tokens on launch (ETH x DeFi token pools & feeds)
-2. Uniswap and Chainlink oracles for base pair feeds
-3. Gas ⛽️ oracle (front-run resistant) w feed (Chainlink)
-4. Leverage
-5. More feeds
-6. New stablecoin based off composition of derivs
-7. Lending of Locked OVL positions (likely through Aave)
-8. Expiries
