@@ -4,6 +4,11 @@
 
 [spec](./specs/notes.md)
 
+## WARNING
+
+The **OVLFPosition** contract is incomplete in its current form. Implementation of the updates to the monetary policy and market position contracts to ensure the long-term stability and robustness of the system are in development. See [overlay-monetary](https://github.com/overlay-market/overlay-monetary) for ongoing progress on agent-based sims of the former.
+
+
 ## Contracts
 
 ### Rinkeby
