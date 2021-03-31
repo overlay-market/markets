@@ -21,7 +21,7 @@ import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./OVLToken.sol"; // XXX import "./SushiToken.sol";
 
-// TODO: SUSHI => OVL everywhere
+
 
 interface IMigratorChef {
     // Perform LP token migration from legacy UniswapV2 to SushiSwap.
@@ -47,11 +47,15 @@ interface IMigratorChef {
 // XXX Strap a token to it: Adding an ERC 1155 to track a user's share of each
 // pool. Token can then be transferred/staked in other contracts for rewards
 // elsewhere (e.g. Overlay treasury contracts for trading fees)
+//
 // TODO:
-//   1. Set "uri" => Rainbow Destruction Cats uri
-//   2. mint/burn in deposit/withdraw
-//   3. SUSHI => OVL
-//   4. transfer() function overrides to change userInfo
+//   1. Set "uri" => Rainbow Destruction Cats uri: []
+//   2. mint/burn ERC1155 in deposit/withdraw: [x]
+//   3. SUSHI => OVL: []
+//   4. transfer() function overrides to change userInfo: [x]
+//   5. Test transfer function hook HEAVILY to make sure is ok: []
+//
+// XXX contract MasterChef is Ownable
 contract MasterChef is Ownable, ERC1155("uri") {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
@@ -272,6 +276,10 @@ contract MasterChef is Ownable, ERC1155("uri") {
         );
         user.amount = user.amount.add(_amount);
         user.rewardDebt = user.amount.mul(pool.accSushiPerShare).div(1e12);
+
+        // Mint the staking credit for given pool
+        _mint(msg.sender, _pid, _amount, "");
+
         emit Deposit(msg.sender, _pid, _amount);
     }
 
@@ -280,6 +288,10 @@ contract MasterChef is Ownable, ERC1155("uri") {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
         require(user.amount >= _amount, "withdraw: not good");
+
+        // Burn the staking credit for given pool
+        _burn(msg.sender, _pid, _amount);
+
         updatePool(_pid);
         uint256 pending =
             user.amount.mul(pool.accSushiPerShare).div(1e12).sub(
@@ -300,6 +312,39 @@ contract MasterChef is Ownable, ERC1155("uri") {
         emit EmergencyWithdraw(msg.sender, _pid, user.amount);
         user.amount = 0;
         user.rewardDebt = 0;
+    }
+
+    // Ensures user info is in sync with staking rights on transfer
+    function _beforeTokenTransfer(
+      address operator,
+      address from,
+      address to,
+      uint256[] memory ids,
+      uint256[] memory amounts,
+      bytes memory data
+    ) internal virtual override(ERC1155) {
+      super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
+
+      // On deposit/withdraw, don't do anything to user info map since already taken care of
+      if (from == address(0) || to == address(0) || from == to) {
+        return;
+      }
+
+      // Change user info for each pool id and amount before transferring staking credit
+      for (uint256 i = 0; i < ids.length; ++i) {
+        uint256 pid = ids[i];
+        uint256 amount = amounts[i];
+
+        PoolInfo storage pool = poolInfo[pid];
+        UserInfo storage userFrom = userInfo[pid][from];
+        UserInfo storage userTo = userInfo[pid][to];
+
+        userFrom.amount = userFrom.amount.sub(amount);
+        userFrom.rewardDebt = userFrom.amount.mul(pool.accSushiPerShare).div(1e12);
+
+        userTo.amount = userTo.amount.add(amount);
+        userTo.rewardDebt = userTo.amount.mul(pool.accSushiPerShare).div(1e12);
+      }
     }
 
     // Safe sushi transfer function, just in case if rounding error causes pool to not have enough SUSHIs.
