@@ -55,7 +55,8 @@ interface IMigratorChef {
 //   3. SUSHI => OVL: []
 //   4. transfer() function overrides to change userInfo: [x]
 //   5. Test transfer function hook HEAVILY to make sure is ok: []
-//   6. Zero out staking credit balance on emergency withdraw: []
+//   6. Zero out staking credit balance on emergency withdraw: [x]
+//   7. Test emergency withdraw HEAVILY to make sure is ok: []
 //
 // XXX contract MasterChef is Ownable
 contract MasterChefToken is Ownable, ERC1155("uri") {
@@ -279,7 +280,7 @@ contract MasterChefToken is Ownable, ERC1155("uri") {
         user.amount = user.amount.add(_amount);
         user.rewardDebt = user.amount.mul(pool.accSushiPerShare).div(1e12);
 
-        // Mint the staking credit for given pool
+        // XXX: Mint the staking credit for given pool
         _mint(msg.sender, _pid, _amount, "");
 
         emit Deposit(msg.sender, _pid, _amount);
@@ -291,7 +292,7 @@ contract MasterChefToken is Ownable, ERC1155("uri") {
         UserInfo storage user = userInfo[_pid][msg.sender];
         require(user.amount >= _amount, "withdraw: not good");
 
-        // Burn the staking credit for given pool
+        // XXX: Burn the staking credit for given pool
         _burn(msg.sender, _pid, _amount);
 
         updatePool(_pid);
@@ -307,14 +308,16 @@ contract MasterChefToken is Ownable, ERC1155("uri") {
     }
 
     // Withdraw without caring about rewards. EMERGENCY ONLY.
-    // XXX: Zero out staking credit balance as well
     function emergencyWithdraw(uint256 _pid) public {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
+
+        // XXX: Zero out staking credit balance as well
         uint256 balance = balanceOf(msg.sender, _pid);
+        _burn(msg.sender, _pid, balance);
+
         pool.lpToken.safeTransfer(address(msg.sender), user.amount);
         emit EmergencyWithdraw(msg.sender, _pid, user.amount);
-        _burn(msg.sender, _pid, balance);
         user.amount = 0;
         user.rewardDebt = 0;
     }
