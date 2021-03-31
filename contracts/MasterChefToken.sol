@@ -44,8 +44,9 @@ interface IMigratorChef {
 //
 // Have fun reading it. Hopefully it's bug-free. God bless.
 //
-// XXX Strap a token to it: Adding an ERC 1155 to track a user's share of each
-// pool. Token can then be transferred/staked in other contracts for rewards
+// XXX MasterChefToken: Strap a token to it!
+// Adding an ERC 1155 to track a user's share of each pool.
+// Token can then be transferred/staked in other contracts for rewards
 // elsewhere (e.g. Overlay treasury contracts for trading fees)
 //
 // TODO:
@@ -56,7 +57,7 @@ interface IMigratorChef {
 //   5. Test transfer function hook HEAVILY to make sure is ok: []
 //
 // XXX contract MasterChef is Ownable
-contract MasterChef is Ownable, ERC1155("uri") {
+contract MasterChefToken is Ownable, ERC1155("uri") {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
     // Info of each user.
