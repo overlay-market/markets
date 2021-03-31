@@ -55,6 +55,7 @@ interface IMigratorChef {
 //   3. SUSHI => OVL: []
 //   4. transfer() function overrides to change userInfo: [x]
 //   5. Test transfer function hook HEAVILY to make sure is ok: []
+//   6. Zero out staking credit balance on emergency withdraw: []
 //
 // XXX contract MasterChef is Ownable
 contract MasterChefToken is Ownable, ERC1155("uri") {
@@ -306,16 +307,19 @@ contract MasterChefToken is Ownable, ERC1155("uri") {
     }
 
     // Withdraw without caring about rewards. EMERGENCY ONLY.
+    // XXX: Zero out staking credit balance as well
     function emergencyWithdraw(uint256 _pid) public {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
+        uint256 balance = balanceOf(msg.sender, _pid);
         pool.lpToken.safeTransfer(address(msg.sender), user.amount);
         emit EmergencyWithdraw(msg.sender, _pid, user.amount);
+        _burn(msg.sender, _pid, balance);
         user.amount = 0;
         user.rewardDebt = 0;
     }
 
-    // Ensures user info is in sync with staking rights on transfer
+    // XXX: Ensures user info is in sync with staking rights on transfer
     function _beforeTokenTransfer(
       address operator,
       address from,
@@ -324,8 +328,6 @@ contract MasterChefToken is Ownable, ERC1155("uri") {
       uint256[] memory amounts,
       bytes memory data
     ) internal virtual override(ERC1155) {
-      super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
-
       // On deposit/withdraw, don't do anything to user info map since already taken care of
       if (from == address(0) || to == address(0) || from == to) {
         return;
