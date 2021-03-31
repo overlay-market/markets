@@ -1,16 +1,38 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+pragma solidity ^0.8.0;
 
-pragma solidity ^0.6.7;
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "@openzeppelin/contracts/utils/math/SignedSafeMath.sol";
 
-import "@openzeppelinV3/contracts/GSN/Context.sol";
-import "@openzeppelinV3/contracts/math/SafeMath.sol";
-import "@openzeppelinV3/contracts/math/SignedSafeMath.sol";
+import "../interfaces/IOVLFeed.sol";
+import "../interfaces/IOVLPosition.sol";
 
-import "../../interfaces/chainlink/AggregatorV3Interface.sol";
-import "../../interfaces/overlay/IOVLFeed.sol";
-import "../../interfaces/overlay/IOVLPosition.sol";
 
-contract OVLChainlinkFeed is Context, IOVLFeed {
+interface AggregatorV3Interface {
+  function getRoundData(uint80 _roundId)
+    external
+    view
+    returns (
+      uint80 roundId,
+      int256 answer,
+      uint256 startedAt,
+      uint256 updatedAt,
+      uint80 answeredInRound
+    );
+
+  function latestRoundData()
+    external
+    view
+    returns (
+      uint80 roundId,
+      int256 answer,
+      uint256 startedAt,
+      uint256 updatedAt,
+      uint80 answeredInRound
+    );
+}
+
+contract OVLChainlinkFeed is IOVLFeed {
   using SafeMath for uint256;
   using SignedSafeMath for int256;
 
@@ -18,7 +40,7 @@ contract OVLChainlinkFeed is Context, IOVLFeed {
   address public dataSource;
   uint256 public rounds; // # of rounds to avg TWAP over (~ 8h)
 
-  constructor(address _data, uint256 _rounds) public {
+  constructor(address _data, uint256 _rounds) {
     _chainlink = AggregatorV3Interface(_data);
     dataSource = _data;
     rounds = _rounds;

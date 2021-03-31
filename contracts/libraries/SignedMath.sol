@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+pragma solidity ^0.8.0;
 
-pragma solidity ^0.6.0;
-
-import "@openzeppelinV3/contracts/math/SignedSafeMath.sol";
+import "@openzeppelin/contracts/utils/math/SignedSafeMath.sol";
 
 library SignedMath {
 
