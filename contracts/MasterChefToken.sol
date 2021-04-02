@@ -60,7 +60,7 @@ interface IMigratorChef {
 //   8. OVLTreasury.sol (ERC1155 compatible/receiver): []
 //
 // XXX contract MasterChef is Ownable
-contract MasterChefToken is Ownable, ERC1155("https://farm.overlay.market/api/{id}.json") {
+contract MasterChefToken is Ownable, ERC1155("https://farm.overlay.market/api/pools/{id}.json") {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
     // Info of each user.
