@@ -1,11 +1,9 @@
-// SPDX-License-Identifier: GPL-3.0
+// SPDX-License-Identifier: AGPL-3.0-or-later
 pragma solidity ^0.8.0;
-
-// COPIED AND MODIFIED from Alchemix:
-// https://github.com/alchemix-finance/alchemix-protocol/blob/master/contracts/AlchemixToken.sol
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
+
 
 contract OVLToken is AccessControl, ERC20("Overlay", "OVL") {
 

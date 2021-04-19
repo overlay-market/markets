@@ -106,5 +106,3 @@ def main():
     token.transfer(claim.address, 10000*1e18, {'from': acct})
     print("OVLClaim balance:", token.balanceOf(claim.address))
     print("Gov balance", token.balanceOf(acct.address))
-
-    # TODO: On deploy, upload uri related info

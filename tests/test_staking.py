@@ -74,7 +74,7 @@ def chef(deployer, reward_token, lp_tokens, create_token):
 
 
 def test_chef_as_token(chef, staker, deployer):
-    assert chef.uri(1) == "https://farm.overlay.market/api/pools/{id}.json"
+    assert chef.uri(1) == "https://farm.overlay.market/api/{id}.json"
     assert chef.balanceOf(staker, 0) == 0.0
 
     n_pools = chef.poolLength()
