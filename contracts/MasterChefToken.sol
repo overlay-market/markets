@@ -57,10 +57,9 @@ interface IMigratorChef {
 //   5. Test transfer function hook HEAVILY to make sure is ok: []
 //   6. Zero out staking credit balance on emergency withdraw: [x]
 //   7. Test emergency withdraw HEAVILY to make sure is ok: []
-//   8. OVLTreasury.sol (ERC1155 compatible/receiver): []
 //
 // XXX contract MasterChef is Ownable
-contract MasterChefToken is Ownable, ERC1155("https://farm.overlay.market/api/{id}.json") {
+contract MasterChefToken is Ownable, ERC1155("uri") {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
     // Info of each user.
@@ -316,11 +315,11 @@ contract MasterChefToken is Ownable, ERC1155("https://farm.overlay.market/api/{i
         // XXX: Zero out staking credit balance as well
         uint256 balance = balanceOf(msg.sender, _pid);
         _burn(msg.sender, _pid, balance);
-        user.amount = 0;
-        user.rewardDebt = 0;
 
         pool.lpToken.safeTransfer(address(msg.sender), user.amount);
         emit EmergencyWithdraw(msg.sender, _pid, user.amount);
+        user.amount = 0;
+        user.rewardDebt = 0;
     }
 
     // XXX: Ensures user info is in sync with staking rights on transfer
