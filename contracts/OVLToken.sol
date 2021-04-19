@@ -16,6 +16,7 @@ contract OVLToken is AccessControl, ERC20("Overlay", "OVL") {
   constructor() {
     _setupRole(ADMIN_ROLE, msg.sender);
     _setupRole(MINTER_ROLE, msg.sender);
+    _setupRole(BURNER_ROLE, msg.sender);
     _setRoleAdmin(MINTER_ROLE, ADMIN_ROLE);
     _setRoleAdmin(BURNER_ROLE, ADMIN_ROLE);
     _setRoleAdmin(ADMIN_ROLE, ADMIN_ROLE);

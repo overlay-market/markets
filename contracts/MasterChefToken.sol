@@ -1,7 +1,12 @@
 // SPDX-License-Identifier: MIT
 
-// COPIED AND MODIFIED from SushiSwap:
-// https://github.com/sushiswap/sushiswap/blob/master/contracts/MasterChef.sol
+// COPIED AND MODIFIED FROM https://github.com/sushiswap/sushiswap/blob/master/contracts/MasterChef.sol
+// Copyright (c) 2020, 2021 SushiSwap
+// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+// The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+// IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 // Ctrl+f for XXX to see all the modifications.
 
@@ -45,7 +50,7 @@ interface IMigratorChef {
 // elsewhere (e.g. Overlay treasury contracts for trading fees)
 //
 // TODO:
-//   1. Set "uri" => Rainbow Destruction Cats uri: [x]
+//   1. Set "uri" => Rainbow Destruction Cats uri: []
 //   2. mint/burn ERC1155 in deposit/withdraw: [x]
 //   3. SUSHI => OVL: []
 //   4. transfer() function overrides to change userInfo: [x]
@@ -53,15 +58,7 @@ interface IMigratorChef {
 //   6. Zero out staking credit balance on emergency withdraw: [x]
 //   7. Test emergency withdraw HEAVILY to make sure is ok: []
 //   8. OVLTreasury.sol (ERC1155 compatible/receiver): []
-//   9. Investigate adding Keep3rV2OracleFactory.update(pair) call on updatePool(): [x]
-//       a. MasterChefToken needs to register as keeper?: Y [x] OR remove keeper modifier on kv2of.update()
-//       b. Keep3rV2OracleFactory.update(pair)/Keep3rV2Oracle.update() doesn't revert?: only on factory, keeper modifiers [x]
-//           - keeper modifier on kv2of.update(): would revert if not keeper calling => need to register MasterChefToken as keeper or remove
-//           - factory modifier on kv2o.update(): would revert if not factory calling => need to call kv2of.update(pair)
-//           - kv2of.update(pair) && kv2o.update(pair) returns bool: [x]
-//           - IUniwapV2Pair(pair) methods revert?:
-//               - getReserves() reverts?: N [x]
-//               - priceCumulativeLast() reverts?: N [x]
+//
 // XXX contract MasterChef is Ownable
 contract MasterChefToken is Ownable, ERC1155("https://farm.overlay.market/api/pools/{id}.json") {
     using SafeMath for uint256;
@@ -348,7 +345,6 @@ contract MasterChefToken is Ownable, ERC1155("https://farm.overlay.market/api/po
         PoolInfo storage pool = poolInfo[pid];
         UserInfo storage userFrom = userInfo[pid][from];
         UserInfo storage userTo = userInfo[pid][to];
-        require(userFrom.amount >= amount, "transfer: not good");
 
         userFrom.amount = userFrom.amount.sub(amount);
         userFrom.rewardDebt = userFrom.amount.mul(pool.accSushiPerShare).div(1e12);
