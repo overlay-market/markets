@@ -1,19 +1,17 @@
-# Overlay Protocol
+# markets
 
-[whitepaper](https://firebasestorage.googleapis.com/v0/b/overlay-app-91fc7.appspot.com/o/OverlayWPv3.pdf?alt=media)
-
-[spec](./specs/notes.md)
+Original ETHGlobal Hackathon repo.
 
 ## WARNING
 
 The **OVLFPosition** contract is incomplete in its current form. Implementation of the updates to the monetary policy and market position contracts to ensure the long-term stability and robustness of the system are in development.
 
 
-## Contracts
+## Docs
 
-For each feed type, we'll have a factory contract that governance uses to deploy all new oracle data streams to offer as markets, that are associated with that feed type.
+[whitepaper](https://firebasestorage.googleapis.com/v0/b/overlay-app-91fc7.appspot.com/o/OverlayWPv3.pdf?alt=media)
 
-Any new feed type we wish to support (e.g. Mirin, Chainlink, UniswapV3), will have the same setup. A factory contract to deploy the position contract for each new stream to offer as a market and stores all the market contracts offered as a registry **AND** the actual position contract for that market for traders to build/unwind with.
+[spec](./specs/notes.md)
 
 
 ### Rinkeby
