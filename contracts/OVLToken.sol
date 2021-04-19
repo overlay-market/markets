@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
+import {IDetailedERC20} from "../interfaces/IDetailedERC20.sol";
 
 
 contract OVLToken is AccessControl, ERC20("Overlay", "OVL") {
