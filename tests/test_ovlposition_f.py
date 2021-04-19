@@ -6,8 +6,9 @@ from brownie import OVLToken, OVLFPosition, OVLTestFeed, accounts
 @pytest.fixture
 def deployment():
     gov = accounts[0]
-    token = OVLToken.deploy({ 'from': gov })
-    token.mint(gov, 1000*1e18, {'from': gov})
+    token = OVLToken.deploy("Overlay", "OVL", { 'from': gov })
+    token.grantRole(token.MINTER_ROLE(), gov.address, { 'from': gov })
+    token.mint(1000*1e18, {'from': gov})
     token.transfer(accounts[1], 1000*1e18, {'from': gov})
 
     feed = OVLTestFeed.deploy({'from': gov})

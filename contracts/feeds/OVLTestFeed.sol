@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-pragma solidity ^0.8.0;
 
+pragma solidity ^0.6.0;
 
-contract OVLFeedMock {
+import "../../interfaces/overlay/IOVLFeed.sol";
+
+contract OVLTestFeed is IOVLFeed {
   int256 public price;
 
   // WARNING: This is only for dummy testing
@@ -10,7 +12,7 @@ contract OVLFeedMock {
     return (price, 0);
   }
 
-  function fetchData() public returns (int256, uint256) {
+  function fetchData() public virtual override returns (int256, uint256) {
     return (price, 0);
   }
 

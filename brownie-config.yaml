@@ -4,13 +4,19 @@ networks:
 autofetch_sources: True
 
 dependencies:
-  - OpenZeppelin/openzeppelin-contracts@4.0.0
+  - OpenZeppelin/openzeppelin-contracts@3.1.0
+  - Uniswap/uniswap-lib@1.1.1
+  - Uniswap/uniswap-v2-core@1.0.1
+  - Uniswap/uniswap-v2-periphery@1.0.0-beta.0
 
 compiler:
   solc:
-    version: 0.8.0
+    version: 0.6.8
     remappings:
-      - "@openzeppelin=OpenZeppelin/openzeppelin-contracts@4.0.0"
+      - "@openzeppelinV3=OpenZeppelin/openzeppelin-contracts@3.1.0"
+      - "@uniswap/lib=Uniswap/uniswap-lib@1.1.1"
+      - "@uniswapV2/core=Uniswap/uniswap-v2-core@1.0.1"
+      - "@uniswapV2/periphery=Uniswap/uniswap-v2-periphery@1.0.0-beta.0"
 
 reports:
   exclude_contracts:

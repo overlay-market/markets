@@ -1,26 +1,28 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/utils/math/Math.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "@openzeppelin/contracts/utils/math/SignedSafeMath.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
-import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+pragma solidity ^0.6.2;
 
-import "./libraries/SignedMath.sol";
-import "../interfaces/IOVLToken.sol";
-import "../interfaces/IOVLFeed.sol";
+import "@openzeppelinV3/contracts/math/Math.sol";
+import "@openzeppelinV3/contracts/math/SafeMath.sol";
+import "@openzeppelinV3/contracts/math/SignedSafeMath.sol";
+import "@openzeppelinV3/contracts/utils/Address.sol";
+import "@openzeppelinV3/contracts/utils/EnumerableSet.sol";
+import "@openzeppelinV3/contracts/token/ERC20/SafeERC20.sol";
+import "@openzeppelinV3/contracts/token/ERC1155/ERC1155.sol";
 
-contract OVLFPosition is ERC1155 {
-  using SafeERC20 for IOVLToken;
+import "../tokens/OVLToken.sol";
+import "../utils/SignedMath.sol";
+import "../../interfaces/overlay/IOVLPosition.sol";
+import "../../interfaces/overlay/IOVLFeed.sol";
+
+contract OVLFPosition is ERC1155, IOVLPosition {
+  using SafeERC20 for OVLToken;
   using Address for address;
   using SafeMath for uint256;
   using SignedSafeMath for int256;
   using EnumerableSet for EnumerableSet.UintSet;
 
-  IOVLToken public token;
+  OVLToken public token;
   IOVLFeed public feed;
 
   uint256 private constant BASE = 1e18;
@@ -28,7 +30,6 @@ contract OVLFPosition is ERC1155 {
 
   uint8 public decimals = 18;
 
-  // TODO: Fix this
   uint256 public maxLeverage = BASE.mul(10);
   uint256 public tradeFee = BASE.mul(15).div(10000);
   uint256 public feeBurn = BASE.mul(50).div(100);
@@ -43,73 +44,57 @@ contract OVLFPosition is ERC1155 {
     int256 lockPrice;
   }
 
-  event Build(
-    address indexed _account,
-    uint indexed _id,
-    uint _amount
-  );
-  event Unwind(
-    address indexed _account,
-    uint indexed _id,
-    uint _amount
-  );
-  event Liquidate(
-    address indexed _account,
-    uint indexed _id,
-    uint _amount
-  );
-
   mapping (uint256 => FPosition) private _positions;
   mapping (uint256 => uint256) private _amounts; // total OVL amount locked in position
 
   EnumerableSet.UintSet private _open;
 
-  constructor(string memory _uri, address _token, address _feed) ERC1155(_uri) {
-    token = IOVLToken(_token);
+  constructor(string memory _uri, address _token, address _feed) public ERC1155(_uri) {
+    token = OVLToken(_token);
+    governance = _msgSender();
+    treasury = _msgSender();
     feed = IOVLFeed(_feed);
-    governance = msg.sender;
-    treasury = msg.sender;
   }
 
   // build() locks _amount in OVL into position
-  function build(uint256 _amount, bool _long, uint256 _leverage) public {
+  function build(uint256 _amount, bool _long, uint256 _leverage) public virtual override {
     require(_amount > 0, "OVLFPosition: must build position with amount greater than zero");
     require(_leverage >= MIN_LEVERAGE, "OVLFPosition: must build position with leverage greater than min allowed");
     require(_leverage <= maxLeverage, "OVLFPosition: must build position with leverage less than max allowed");
 
-    token.safeTransferFrom(msg.sender, address(this), _amount);
+    token.safeTransferFrom(_msgSender(), address(this), _amount);
     uint256 fees = _calcFeeAmount(_amount, _leverage);
     _amount = _amount.sub(fees);
 
     // Enter position with corresponding receipt. 1:1 bw share of position (balance) and OVL locked for FPosition
     uint256 id = _enterPosition(_amount, _long, _leverage);
-    _mint(msg.sender, id, _amount, "");
+    _mint(_msgSender(), id, _amount, "");
     _transferFeesToTreasury(fees);
-    emit Build(msg.sender, id, _amount);
+    emit Build(_msgSender(), id, _amount);
   }
 
-  function buildAll(bool _long, uint256 _leverage) public {
-    uint256 amount = token.balanceOf(msg.sender);
+  function buildAll(bool _long, uint256 _leverage) public virtual override {
+    uint256 amount = token.balanceOf(_msgSender());
     build(amount, _long, _leverage);
   }
 
   // uwind() unlocks _amount in OVL from position
-  function unwind(uint256 _id, uint256 _amount) public {
+  function unwind(uint256 _id, uint256 _amount) public virtual override {
     // 1:1 bw share of position (balance) and OVL locked for FPosition
     require(_amount > 0, "OVLFPosition: must unwind position with amount greater than zero");
     require(_amount <= amountLockedIn(_id), "OVLFPosition: not enough locked in pool to unwind amount");
 
-    _burn(msg.sender, _id, _amount);
+    _burn(_msgSender(), _id, _amount);
     int256 profit = _exitPosition(_id, _amount);
 
     if (profit > 0) {
       uint256 mintAmount = uint256(SignedMath.abs(profit));
-      token.mint(msg.sender, mintAmount);
+      token.mint(mintAmount);
       _amount = _amount.add(mintAmount);
     } else if (profit < 0) {
       // Make sure don't burn more than original unwind amount
       uint256 burnAmount = Math.min(uint256(SignedMath.abs(profit)), _amount);
-      token.burn(msg.sender, burnAmount);
+      token.burn(burnAmount);
       _amount = _amount.sub(burnAmount);
     }
 
@@ -119,20 +104,20 @@ contract OVLFPosition is ERC1155 {
 
     // Send principal + profit back to trader and fees to treasury
     if (_amount > 0) {
-      token.safeTransfer(msg.sender, _amount);
+      token.safeTransfer(_msgSender(), _amount);
       _transferFeesToTreasury(fees);
     }
-    emit Unwind(msg.sender, _id, _amount);
+    emit Unwind(_msgSender(), _id, _amount);
   }
 
   // uwindAll() unlocks entire position
-  function unwindAll(uint256 _id) public {
-    uint256 amount = balanceOf(msg.sender, _id);
+  function unwindAll(uint256 _id) public virtual override {
+    uint256 amount = balanceOf(_msgSender(), _id);
     unwind(_id, amount);
   }
 
   // liquidate() burns underwater positions
-  function liquidate(uint256 _id) public {
+  function liquidate(uint256 _id) public virtual override {
     require(_positionExists(_id), "OVLFPosition: position must exist");
     int256 price = _getPrice();
     require(_canLiquidate(_id, price), "OVLFPosition: position must be underwater");
@@ -148,14 +133,14 @@ contract OVLFPosition is ERC1155 {
     // send fees to treasury and transfer rest to liquidater
     uint256 reward = amount.mul(liquidateReward).div(BASE);
     amount = amount.sub(reward);
-    token.burn(msg.sender, amount);
-    token.safeTransfer(msg.sender, reward);
+    token.burn(amount);
+    token.safeTransfer(_msgSender(), reward);
     _transferFeesToTreasury(fees);
-    emit Liquidate(msg.sender, _id, reward);
+    emit Liquidate(_msgSender(), _id, reward);
   }
 
   // liquidatable() lists underwater positions
-  function liquidatable() public returns (uint256[] memory) {
+  function liquidatable() public virtual override returns (uint256[] memory) {
     int256 price = _getPrice();
     uint256[] memory liqs = new uint256[](_open.length()); // TODO: len > liqs.length, which produces empty zero values at the end of ret array. Is this a problem ever with keccak() ids and an edge case?
     for (uint256 i=0; i < _open.length(); i++) {
@@ -247,7 +232,7 @@ contract OVLFPosition is ERC1155 {
 
   function _transferFeesToTreasury(uint256 fees) private {
     uint256 burnAmount = fees.mul(feeBurn).div(BASE);
-    token.burn(msg.sender, burnAmount);
+    token.burn(burnAmount);
 
     fees = fees.sub(burnAmount);
     token.safeTransfer(treasury, fees);
@@ -294,7 +279,7 @@ contract OVLFPosition is ERC1155 {
 
   // gov setters
   modifier onlyGov() {
-    require(governance == msg.sender, "not governance");
+    require(governance == _msgSender(), "OVLFPosition: caller is not governance");
     _;
   }
 
